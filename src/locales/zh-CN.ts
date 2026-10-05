@@ -17,6 +17,7 @@ const zhCN = {
   loadingDbs: "加载中...",
   noConnections: "请点击「+ 添加」添加连接",
   dumpTitle: "导出（ZIP）",
+  reloadTitle: "重新加载",
   restoreTitle: "还原（ZIP）",
   dumpSuccess: "导出完成：{col} 个集合，{doc} 个文档",
   dumpFail: "导出失败：{error}",

@@ -17,6 +17,7 @@ const ja = {
   loadingDbs: "読込中...",
   noConnections: "「+ 追加」から接続先を登録してください",
   dumpTitle: "ダンプ（ZIP）",
+  reloadTitle: "再読み込み",
   restoreTitle: "リストア（ZIP）",
   dumpSuccess: "ダンプ完了: {col} コレクション, {doc} ドキュメント",
   dumpFail: "ダンプ失敗: {error}",

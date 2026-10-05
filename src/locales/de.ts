@@ -17,6 +17,7 @@ const de = {
   loadingDbs: "Wird geladen...",
   noConnections: "Klicke auf \"+ Hinzufügen\", um eine Verbindung anzulegen",
   dumpTitle: "Dump (ZIP)",
+  reloadTitle: "Neu laden",
   restoreTitle: "Wiederherstellen (ZIP)",
   dumpSuccess: "Dump abgeschlossen: {col} Collections, {doc} Dokumente",
   dumpFail: "Dump fehlgeschlagen: {error}",

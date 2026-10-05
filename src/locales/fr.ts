@@ -17,6 +17,7 @@ const fr = {
   loadingDbs: "Chargement...",
   noConnections: "Cliquez sur \"+ Ajouter\" pour enregistrer une connexion",
   dumpTitle: "Sauvegarde (ZIP)",
+  reloadTitle: "Recharger",
   restoreTitle: "Restauration (ZIP)",
   dumpSuccess: "Sauvegarde terminée : {col} collections, {doc} documents",
   dumpFail: "Échec de la sauvegarde : {error}",

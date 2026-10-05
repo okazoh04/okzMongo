@@ -17,6 +17,7 @@ const vi = {
   loadingDbs: "Đang tải...",
   noConnections: "Nhấp \"+ Thêm\" để đăng ký một kết nối",
   dumpTitle: "Sao lưu (ZIP)",
+  reloadTitle: "Tải lại",
   restoreTitle: "Khôi phục (ZIP)",
   dumpSuccess: "Sao lưu hoàn tất: {col} collection, {doc} tài liệu",
   dumpFail: "Sao lưu thất bại: {error}",

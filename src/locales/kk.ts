@@ -17,6 +17,7 @@ const kk = {
   loadingDbs: "Жүктелуде...",
   noConnections: "Қосылымды тіркеу үшін \"+ Қосу\" басыңыз",
   dumpTitle: "Дамп (ZIP)",
+  reloadTitle: "Қайта жүктеу",
   restoreTitle: "Қалпына келтіру (ZIP)",
   dumpSuccess: "Дамп аяқталды: {col} коллекция, {doc} құжат",
   dumpFail: "Дамп сәтсіз аяқталды: {error}",

@@ -17,6 +17,7 @@ const ru = {
   loadingDbs: "Загрузка...",
   noConnections: "Нажмите «+ Добавить», чтобы зарегистрировать подключение",
   dumpTitle: "Дамп (ZIP)",
+  reloadTitle: "Обновить",
   restoreTitle: "Восстановление (ZIP)",
   dumpSuccess: "Дамп завершён: коллекций — {col}, документов — {doc}",
   dumpFail: "Ошибка дампа: {error}",

@@ -17,6 +17,7 @@ const ar = {
   loadingDbs: "جارٍ التحميل...",
   noConnections: "انقر على \"+ إضافة\" لتسجيل اتصال",
   dumpTitle: "تفريغ (ZIP)",
+  reloadTitle: "إعادة التحميل",
   restoreTitle: "استعادة (ZIP)",
   dumpSuccess: "اكتمل التفريغ: {col} مجموعة، {doc} مستند",
   dumpFail: "فشل التفريغ: {error}",

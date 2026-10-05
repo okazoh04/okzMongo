@@ -17,6 +17,7 @@ const pt = {
   loadingDbs: "Carregando...",
   noConnections: "Clique em \"+ Adicionar\" para registrar uma conexão",
   dumpTitle: "Dump (ZIP)",
+  reloadTitle: "Recarregar",
   restoreTitle: "Restaurar (ZIP)",
   dumpSuccess: "Dump concluído: {col} coleções, {doc} documentos",
   dumpFail: "Falha no dump: {error}",

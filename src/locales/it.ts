@@ -17,6 +17,7 @@ const it = {
   loadingDbs: "Caricamento...",
   noConnections: "Fai clic su \"+ Aggiungi\" per registrare una connessione",
   dumpTitle: "Dump (ZIP)",
+  reloadTitle: "Ricarica",
   restoreTitle: "Ripristino (ZIP)",
   dumpSuccess: "Dump completato: {col} collection, {doc} documenti",
   dumpFail: "Dump non riuscito: {error}",

@@ -17,6 +17,7 @@ const zhTW = {
   loadingDbs: "載入中...",
   noConnections: "請點擊「+ 新增」新增連線",
   dumpTitle: "匯出（ZIP）",
+  reloadTitle: "重新載入",
   restoreTitle: "還原（ZIP）",
   dumpSuccess: "匯出完成：{col} 個集合，{doc} 個文件",
   dumpFail: "匯出失敗：{error}",

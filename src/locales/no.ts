@@ -17,6 +17,7 @@ const no = {
   loadingDbs: "Laster...",
   noConnections: "Klikk på \"+ Legg til\" for å registrere en tilkobling",
   dumpTitle: "Dump (ZIP)",
+  reloadTitle: "Last inn på nytt",
   restoreTitle: "Gjenopprett (ZIP)",
   dumpSuccess: "Dump fullført: {col} samlinger, {doc} dokumenter",
   dumpFail: "Dump mislyktes: {error}",

@@ -17,6 +17,7 @@ const es = {
   loadingDbs: "Cargando...",
   noConnections: "Haz clic en \"+ Añadir\" para registrar una conexión",
   dumpTitle: "Volcado (ZIP)",
+  reloadTitle: "Recargar",
   restoreTitle: "Restaurar (ZIP)",
   dumpSuccess: "Volcado completado: {col} colecciones, {doc} documentos",
   dumpFail: "Error al volcar: {error}",

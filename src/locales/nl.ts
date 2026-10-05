@@ -17,6 +17,7 @@ const nl = {
   loadingDbs: "Laden...",
   noConnections: "Klik op \"+ Toevoegen\" om een verbinding te registreren",
   dumpTitle: "Dump (ZIP)",
+  reloadTitle: "Opnieuw laden",
   restoreTitle: "Herstellen (ZIP)",
   dumpSuccess: "Dump voltooid: {col} collecties, {doc} documenten",
   dumpFail: "Dump mislukt: {error}",

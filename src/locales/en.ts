@@ -17,6 +17,7 @@ const en = {
   loadingDbs: "Loading...",
   noConnections: "Click \"+ Add\" to register a connection",
   dumpTitle: "Dump (ZIP)",
+  reloadTitle: "Reload",
   restoreTitle: "Restore (ZIP)",
   dumpSuccess: "Dump complete: {col} collections, {doc} documents",
   dumpFail: "Dump failed: {error}",

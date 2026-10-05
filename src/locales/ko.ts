@@ -17,6 +17,7 @@ const ko = {
   loadingDbs: "로딩 중...",
   noConnections: "「+ 추가」로 연결을 등록하세요",
   dumpTitle: "덤프 (ZIP)",
+  reloadTitle: "새로고침",
   restoreTitle: "복원 (ZIP)",
   dumpSuccess: "덤프 완료: {col}개 컬렉션, {doc}개 문서",
   dumpFail: "덤프 실패: {error}",

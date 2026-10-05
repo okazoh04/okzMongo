@@ -17,6 +17,7 @@ const sv = {
   loadingDbs: "Laddar...",
   noConnections: "Klicka på \"+ Lägg till\" för att registrera en anslutning",
   dumpTitle: "Dumpa (ZIP)",
+  reloadTitle: "Ladda om",
   restoreTitle: "Återställ (ZIP)",
   dumpSuccess: "Dump klar: {col} samlingar, {doc} dokument",
   dumpFail: "Dump misslyckades: {error}",

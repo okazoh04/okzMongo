@@ -17,6 +17,7 @@ const th = {
   loadingDbs: "กำลังโหลด...",
   noConnections: "คลิก \"+ เพิ่ม\" เพื่อลงทะเบียนการเชื่อมต่อ",
   dumpTitle: "ดัมพ์ (ZIP)",
+  reloadTitle: "โหลดใหม่",
   restoreTitle: "กู้คืน (ZIP)",
   dumpSuccess: "ดัมพ์เสร็จสมบูรณ์: {col} คอลเลกชัน, {doc} เอกสาร",
   dumpFail: "ดัมพ์ล้มเหลว: {error}",

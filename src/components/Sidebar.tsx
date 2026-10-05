@@ -86,6 +86,13 @@ export default function Sidebar({
     }
   };
 
+  const handleReload = async (connectionId: string) => {
+    await loadDatabases(connectionId);
+    for (const db of expandedDbs[connectionId] ?? []) {
+      await refreshCollections(connectionId, db);
+    }
+  };
+
   const handleConnect = async (id: string) => {
     setConnecting(id);
     setConnError(e => { const n = { ...e }; delete n[id]; return n; });
@@ -296,6 +303,13 @@ export default function Sidebar({
                 }}>
                   {t[ENV_LABEL_KEY[conn.environment]]}
                 </span>
+                {isConnected && (
+                  <button
+                    onClick={() => handleReload(conn.id)}
+                    style={{ fontSize: 13, padding: "3px 7px", background: "none", flexShrink: 0 }}
+                    title={t.reloadTitle}
+                  >↻</button>
+                )}
                 {isConnected ? (
                   <button
                     onClick={() => handleDisconnect(conn.id)}
@@ -380,6 +394,7 @@ export default function Sidebar({
                             : null
                         }
                         onCreateCollection={name => handleCreateCollection(conn.id, db, name)}
+                        onReload={() => refreshCollections(conn.id, db)}
                         droppingCollections={new Set(cols.filter(c => dropping.has(`${conn.id}::${db}::${c}`)))}
                         onDropCollection={col => handleDropCollection(conn.id, db, col)}
                         onDump={() => handleDump(conn.id, db)}
@@ -443,7 +458,7 @@ export default function Sidebar({
 
 function DbNode({
   db, isExpanded, collections, onToggle, onSelectDb, onSelectCollection,
-  selectedCollection, onCreateCollection, droppingCollections, onDropCollection, onDump, onRestore,
+  selectedCollection, onCreateCollection, onReload, droppingCollections, onDropCollection, onDump, onRestore,
 }: {
   db: string;
   isExpanded: boolean;
@@ -453,6 +468,7 @@ function DbNode({
   onSelectCollection: (col: string) => void;
   selectedCollection: string | null;
   onCreateCollection: (name: string) => void;
+  onReload: () => void;
   droppingCollections: Set<string>;
   onDropCollection: (col: string) => void;
   onDump: () => void;
@@ -484,6 +500,11 @@ function DbNode({
           }}
           title={t.queryPad}
         >⌨</button>
+        <button
+          onClick={e => { e.stopPropagation(); onReload(); }}
+          style={{ fontSize: 13, padding: "3px 7px", background: "none", opacity: 0.6 }}
+          title={t.reloadTitle}
+        >↻</button>
         <button
           onClick={e => { e.stopPropagation(); onDump(); }}
           style={{ fontSize: 13, padding: "3px 7px", background: "none", opacity: 0.6 }}
