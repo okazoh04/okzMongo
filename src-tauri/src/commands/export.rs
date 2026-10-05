@@ -77,6 +77,11 @@ pub struct DumpStats {
     pub documents: u64,
 }
 
+/// `system.profile` 等のサーバー管理コレクション（ユーザーによる書き込み不可）
+fn is_system_collection(name: &str) -> bool {
+    name.starts_with("system.")
+}
+
 #[tauri::command]
 pub async fn dump_database(
     state: State<'_, AppState>,
@@ -101,7 +106,7 @@ pub async fn dump_database(
     let mut collections_map = serde_json::Map::new();
     let mut total_docs: u64 = 0;
 
-    for col_name in &col_names {
+    for col_name in col_names.iter().filter(|n| !is_system_collection(n)) {
         let col = db.collection::<Document>(col_name);
         let docs = find_all_as_json(&col, col_name).await?;
         total_docs += docs.len() as u64;
@@ -194,6 +199,10 @@ pub async fn restore_database(
     let mut col_count: usize = 0;
 
     for (col_name, docs_value) in collections {
+        // 旧ダンプに含まれる system.profile 等は書き込み不可のためスキップ
+        if is_system_collection(col_name) {
+            continue;
+        }
         let docs_arr = docs_value
             .as_array()
             .ok_or_else(|| format!("コレクション '{col_name}' のデータが不正です"))?;
