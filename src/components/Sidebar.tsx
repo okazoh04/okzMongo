@@ -37,6 +37,7 @@ export default function Sidebar({
   const [connecting, setConnecting] = useState<string | null>(null);
   const [connError, setConnError] = useState<Record<string, ConnectError>>({});
   const [connProgress, setConnProgress] = useState<Record<string, Partial<Record<ConnectStage, ConnectStageStatus>>>>({});
+  const [dropping, setDropping] = useState<Set<string>>(new Set());
   const [editTarget, setEditTarget] = useState<"new" | string | null>(null);
   const [connMenu, setConnMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [newDbInput, setNewDbInput] = useState<Record<string, { dbName: string; colName: string } | null>>({});
@@ -157,8 +158,16 @@ export default function Sidebar({
     const env = connections.find(c => c.id === connectionId)?.environment ?? "development";
     if (!await guard(env, "dropCollection")) return;
     if (!await confirm(tpl(t.dropCollectionConfirm, { col }))) return;
-    await invoke("drop_collection", { connectionId, dbName: db, collectionName: col });
-    await refreshCollections(connectionId, db);
+    const key = `${connectionId}::${db}::${col}`;
+    setDropping(prev => new Set(prev).add(key));
+    try {
+      await invoke("drop_collection", { connectionId, dbName: db, collectionName: col });
+    } catch (e) {
+      alert(String(e));
+    } finally {
+      setDropping(prev => { const n = new Set(prev); n.delete(key); return n; });
+      await refreshCollections(connectionId, db);
+    }
   };
 
   const handleDump = async (connectionId: string, db: string) => {
@@ -371,6 +380,7 @@ export default function Sidebar({
                             : null
                         }
                         onCreateCollection={name => handleCreateCollection(conn.id, db, name)}
+                        droppingCollections={new Set(cols.filter(c => dropping.has(`${conn.id}::${db}::${c}`)))}
                         onDropCollection={col => handleDropCollection(conn.id, db, col)}
                         onDump={() => handleDump(conn.id, db)}
                         onRestore={() => handleRestore(conn.id, db)}
@@ -433,7 +443,7 @@ export default function Sidebar({
 
 function DbNode({
   db, isExpanded, collections, onToggle, onSelectDb, onSelectCollection,
-  selectedCollection, onCreateCollection, onDropCollection, onDump, onRestore,
+  selectedCollection, onCreateCollection, droppingCollections, onDropCollection, onDump, onRestore,
 }: {
   db: string;
   isExpanded: boolean;
@@ -443,6 +453,7 @@ function DbNode({
   onSelectCollection: (col: string) => void;
   selectedCollection: string | null;
   onCreateCollection: (name: string) => void;
+  droppingCollections: Set<string>;
   onDropCollection: (col: string) => void;
   onDump: () => void;
   onRestore: () => void;
@@ -487,13 +498,16 @@ function DbNode({
 
       {isExpanded && (
         <div style={{ paddingLeft: 16 }}>
-          {collections.map(col => (
+          {collections.map(col => {
+            const isDropping = droppingCollections.has(col);
+            return (
             <div
               key={col}
-              onClick={() => onSelectCollection(col)}
+              onClick={() => { if (!isDropping) onSelectCollection(col); }}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "2px 6px", cursor: "pointer", borderRadius: 3,
+                padding: "2px 6px", cursor: isDropping ? "progress" : "pointer", borderRadius: 3,
+                opacity: isDropping ? 0.5 : 1,
                 background: selectedCollection === col ? "var(--surface2)" : "transparent",
               }}
             >
@@ -502,13 +516,15 @@ function DbNode({
               </span>
               <button
                 onClick={e => { e.stopPropagation(); onDropCollection(col); }}
+                disabled={isDropping}
                 style={{ fontSize: 12, padding: "2px 6px", color: "var(--text-muted)", background: "none", opacity: 0.5 }}
                 title={t.deleteDoc}
               >
-                ✕
+                {isDropping ? "⏳" : "✕"}
               </button>
             </div>
-          ))}
+            );
+          })}
 
           {showInput ? (
             <div style={{ display: "flex", gap: 3, padding: "2px 0" }}>
