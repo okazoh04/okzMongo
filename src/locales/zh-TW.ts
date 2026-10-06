@@ -161,6 +161,19 @@ const zhTW = {
   queryLog: "查詢記錄",
   queryLogEmpty: "尚無查詢",
   queryLogCopy: "複製",
+  copy: "複製",
+  paste: "貼上",
+  clipboardEmpty: "沒有已複製的資料",
+  copySelected: "複製所選 {count} 筆",
+  copyAll: "複製全部顯示項目",
+  selectForCopy: "選取文件（用於複製）",
+  pasteToDbTitle: "貼上「{src}」",
+  pasteFromTitle: "貼上「{src}」",
+  pasteNamePlaceholder: "目標集合名稱",
+  pasteMergeConfirm: "「{col}」已存在。是否附加貼上到現有集合？（_id 重複的文件將被略過）",
+  pasteSameCollectionConfirm: "這是同一個集合。將使用新的 _id 複製文件。是否繼續？",
+  pasteDone: "貼上完成：{copied} 筆（因 _id 重複略過 {skipped} 筆／建立索引 {indexes} 個）",
+  pasteFail: "貼上失敗：{error}",
 };
 
 export default zhTW;

@@ -161,6 +161,19 @@ const ko = {
   queryLog: "쿼리 기록",
   queryLogEmpty: "아직 쿼리가 없습니다",
   queryLogCopy: "복사",
+  copy: "복사",
+  paste: "붙여넣기",
+  clipboardEmpty: "복사된 데이터가 없습니다",
+  copySelected: "선택한 {count}개 복사",
+  copyAll: "표시된 항목 모두 복사",
+  selectForCopy: "문서 선택(복사용)",
+  pasteToDbTitle: "\"{src}\" 붙여넣기",
+  pasteFromTitle: "\"{src}\" 붙여넣기",
+  pasteNamePlaceholder: "대상 컬렉션 이름",
+  pasteMergeConfirm: "\"{col}\"이(가) 이미 있습니다. 기존 컬렉션에 추가로 붙여넣을까요? (_id가 중복된 문서는 건너뜁니다)",
+  pasteSameCollectionConfirm: "같은 컬렉션입니다. 새 _id를 부여하여 복제합니다. 계속할까요?",
+  pasteDone: "붙여넣기 완료: {copied}건 (_id 중복으로 {skipped}건 건너뜀 / 인덱스 {indexes}개 생성)",
+  pasteFail: "붙여넣기 실패: {error}",
 };
 
 export default ko;

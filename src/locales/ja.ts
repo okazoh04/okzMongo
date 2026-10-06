@@ -161,6 +161,19 @@ const ja = {
   queryLog: "クエリ履歴",
   queryLogEmpty: "まだクエリはありません",
   queryLogCopy: "コピー",
+  copy: "コピー",
+  paste: "貼り付け",
+  clipboardEmpty: "コピーされたデータがありません",
+  copySelected: "選択した{count}件をコピー",
+  copyAll: "表示中の全件をコピー",
+  selectForCopy: "ドキュメントを選択（コピー用）",
+  pasteToDbTitle: "「{src}」を貼り付け",
+  pasteFromTitle: "「{src}」を貼り付け",
+  pasteNamePlaceholder: "貼り付け先のコレクション名",
+  pasteMergeConfirm: "「{col}」は既に存在します。既存のコレクションへ追加で貼り付けますか？（_idが重複するドキュメントはスキップされます）",
+  pasteSameCollectionConfirm: "同じコレクションへの貼り付けです。新しい_idを採番して複製します。よろしいですか？",
+  pasteDone: "貼り付け完了: {copied}件（_id重複でスキップ {skipped}件／インデックス {indexes}件作成）",
+  pasteFail: "貼り付けに失敗しました: {error}",
 };
 
 export default ja;

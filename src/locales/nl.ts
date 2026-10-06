@@ -161,6 +161,19 @@ const nl = {
   queryLog: "Querylogboek",
   queryLogEmpty: "Nog geen queries",
   queryLogCopy: "Kopiëren",
+  copy: "Copy",
+  paste: "Paste",
+  clipboardEmpty: "Nothing has been copied",
+  copySelected: "Copy {count} selected",
+  copyAll: "Copy all shown",
+  selectForCopy: "Select document (for copy)",
+  pasteToDbTitle: "Paste \"{src}\"",
+  pasteFromTitle: "Paste \"{src}\"",
+  pasteNamePlaceholder: "Target collection name",
+  pasteMergeConfirm: "\"{col}\" already exists. Paste into the existing collection? (Documents with duplicate _id are skipped)",
+  pasteSameCollectionConfirm: "This is the same collection. Documents will be duplicated with new _id values. Continue?",
+  pasteDone: "Pasted: {copied} (skipped {skipped} duplicate _id, created {indexes} indexes)",
+  pasteFail: "Paste failed: {error}",
 };
 
 export default nl;

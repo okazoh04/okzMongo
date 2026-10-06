@@ -8,6 +8,7 @@ import { useI18n } from "../i18n";
 import { unwrapValue } from "../lib/bsonTypes";
 import { usePolicy } from "../PolicyProvider";
 import { EnvironmentTier } from "../types";
+import { useClipboard, clipLabel } from "../ClipboardProvider";
 
 interface Props {
   connectionId: string;
@@ -22,6 +23,7 @@ const PAGE_SIZE = 50;
 export default function DocumentList({ connectionId, db, collection, filterJson, environment }: Props) {
   const { t, tpl } = useI18n();
   const { guard } = usePolicy();
+  const { clip, copy, paste } = useClipboard();
   const [docs, setDocs] = useState<Record<string, unknown>[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -30,6 +32,8 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
   const [showNew, setShowNew] = useState(false);
   const [ioStatus, setIoStatus] = useState<{ msg: string; ok: boolean } | null>(null);
   const [dirtyKeys, setDirtyKeys] = useState<Set<number>>(new Set());
+  // 選択中ドキュメントの _id（Extended JSON 文字列）
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,6 +58,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
       setDocs(fetched);
       setTotal(cnt);
       setDirtyKeys(new Set());
+      setSelectedIds(new Set());
     } catch (e) {
       setError(String(e));
     } finally {
@@ -156,6 +161,31 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
     }
   };
 
+  const idKey = (doc: Record<string, unknown>) => JSON.stringify(doc._id);
+
+  const toggleSelected = (key: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  };
+
+  /** 選択があれば選択分、無ければ現在の絞り込み条件に一致する全件をコピーする */
+  const handleCopy = () => {
+    const base = { kind: "documents" as const, connectionId, db, collection };
+    if (selectedIds.size > 0) {
+      const ids = [...selectedIds].map(k => JSON.parse(k));
+      copy({ ...base, filterJson: JSON.stringify({ _id: { $in: ids } }), count: ids.length });
+    } else {
+      copy({ ...base, filterJson, count: total });
+    }
+  };
+
+  const handlePaste = async () => {
+    if (await paste({ connectionId, db, collection, environment })) load();
+  };
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
@@ -177,6 +207,15 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowNew(true)} className="primary">{t.addDoc}</button>
         <button onClick={load}>{t.refresh}</button>
+        <span style={{ color: "var(--border)" }}>|</span>
+        <button onClick={handleCopy} disabled={total === 0}>
+          {selectedIds.size > 0 ? tpl(t.copySelected, { count: selectedIds.size }) : t.copyAll}
+        </button>
+        <button
+          onClick={handlePaste}
+          disabled={!clip}
+          title={clip ? tpl(t.pasteFromTitle, { src: clipLabel(clip) }) : t.clipboardEmpty}
+        >{t.paste}</button>
         <span style={{ color: "var(--border)" }}>|</span>
         <button onClick={handleExport}>{t.exportBtn}</button>
         <button onClick={handleImport}>{t.importBtn}</button>
@@ -219,6 +258,13 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
                 alignItems: "flex-start",
               }}
             >
+              <input
+                type="checkbox"
+                checked={selectedIds.has(idKey(doc))}
+                onChange={() => toggleSelected(idKey(doc))}
+                title={t.selectForCopy}
+                style={{ marginTop: 3, flexShrink: 0 }}
+              />
               <div style={{ flex: 1, minWidth: 0 }}>
                 {dirty && (
                   <div style={{ fontSize: 10, color: "var(--yellow)", marginBottom: 3 }}>

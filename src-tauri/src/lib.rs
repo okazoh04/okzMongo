@@ -5,7 +5,7 @@ mod query_log;
 mod ssh_tunnel;
 mod state;
 
-use commands::{connection::*, database::*, export::*};
+use commands::{connection::*, copy::*, database::*, export::*};
 use state::AppState;
 use tauri::Manager;
 
@@ -48,6 +48,8 @@ pub fn run() {
             import_collection,
             dump_database,
             restore_database,
+            // コピー&ペースト
+            copy_documents,
             // クエリスクラッチパッド
             run_aggregate,
             get_field_names,

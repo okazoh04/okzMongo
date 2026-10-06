@@ -161,6 +161,19 @@ const zhCN = {
   queryLog: "查询日志",
   queryLogEmpty: "暂无查询",
   queryLogCopy: "复制",
+  copy: "复制",
+  paste: "粘贴",
+  clipboardEmpty: "没有已复制的数据",
+  copySelected: "复制所选 {count} 项",
+  copyAll: "复制全部显示项",
+  selectForCopy: "选择文档（用于复制）",
+  pasteToDbTitle: "粘贴“{src}”",
+  pasteFromTitle: "粘贴“{src}”",
+  pasteNamePlaceholder: "目标集合名称",
+  pasteMergeConfirm: "“{col}”已存在。是否追加粘贴到现有集合？（_id 重复的文档将被跳过）",
+  pasteSameCollectionConfirm: "这是同一个集合。将使用新的 _id 复制文档。是否继续？",
+  pasteDone: "粘贴完成：{copied} 条（因 _id 重复跳过 {skipped} 条／创建索引 {indexes} 个）",
+  pasteFail: "粘贴失败：{error}",
 };
 
 export default zhCN;

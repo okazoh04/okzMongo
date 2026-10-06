@@ -9,6 +9,7 @@ import ContextMenu from "./ContextMenu";
 import { useI18n } from "../i18n";
 import { ENV_LABEL_KEY, ENV_COLOR } from "../policy";
 import { usePolicy } from "../PolicyProvider";
+import { useClipboard, clipLabel } from "../ClipboardProvider";
 
 interface Props {
   connections: ConnectionConfig[];
@@ -31,6 +32,7 @@ export default function Sidebar({
 }: Props) {
   const { t, tpl } = useI18n();
   const { guard } = usePolicy();
+  const { copy, paste } = useClipboard();
   const [expandedDbs, setExpandedDbs] = useState<Record<string, Set<string>>>({});
   const [collections, setCollections] = useState<Record<string, string[]>>({});
   const [databases, setDatabases] = useState<Record<string, string[]>>({});
@@ -175,6 +177,22 @@ export default function Sidebar({
       setDropping(prev => { const n = new Set(prev); n.delete(key); return n; });
       await refreshCollections(connectionId, db);
     }
+  };
+
+  const envOf = (connectionId: string) =>
+    connections.find(c => c.id === connectionId)?.environment ?? "development";
+
+  const handleCopyCollection = (connectionId: string, db: string, col: string) => {
+    copy({ kind: "collection", connectionId, db, collection: col, filterJson: "{}" });
+  };
+
+  /** コレクション/ドキュメントのコピーを、DB配下の `name` コレクションへ貼り付ける */
+  const handlePaste = async (connectionId: string, db: string, name: string) => {
+    const key = `${connectionId}::${db}`;
+    const exists = (collections[key] ?? []).includes(name);
+    if (exists && !await confirm(tpl(t.pasteMergeConfirm, { col: name }))) return;
+    const ok = await paste({ connectionId, db, collection: name, environment: envOf(connectionId) });
+    if (ok) await refreshCollections(connectionId, db);
   };
 
   const handleDump = async (connectionId: string, db: string) => {
@@ -399,6 +417,8 @@ export default function Sidebar({
                         onDropCollection={col => handleDropCollection(conn.id, db, col)}
                         onDump={() => handleDump(conn.id, db)}
                         onRestore={() => handleRestore(conn.id, db)}
+                        onCopyCollection={col => handleCopyCollection(conn.id, db, col)}
+                        onPaste={name => handlePaste(conn.id, db, name)}
                       />
                     );
                   })}
@@ -459,6 +479,7 @@ export default function Sidebar({
 function DbNode({
   db, isExpanded, collections, onToggle, onSelectDb, onSelectCollection,
   selectedCollection, onCreateCollection, onReload, droppingCollections, onDropCollection, onDump, onRestore,
+  onCopyCollection, onPaste,
 }: {
   db: string;
   isExpanded: boolean;
@@ -473,8 +494,13 @@ function DbNode({
   onDropCollection: (col: string) => void;
   onDump: () => void;
   onRestore: () => void;
+  onCopyCollection: (col: string) => void;
+  onPaste: (name: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, tpl } = useI18n();
+  const { clip } = useClipboard();
+  const [colMenu, setColMenu] = useState<{ col: string; x: number; y: number } | null>(null);
+  const [pasteName, setPasteName] = useState<string | null>(null);
   const [newColName, setNewColName] = useState("");
   const [showInput, setShowInput] = useState(false);
 
@@ -506,6 +532,19 @@ function DbNode({
           title={t.reloadTitle}
         >↻</button>
         <button
+          onClick={e => {
+            e.stopPropagation();
+            if (!clip) { alert(t.clipboardEmpty); return; }
+            if (!isExpanded) onToggle();
+            setPasteName(clip.kind === "collection"
+              ? (collections.includes(clip.collection) ? `${clip.collection}_copy` : clip.collection)
+              : clip.collection);
+          }}
+          disabled={!clip}
+          style={{ fontSize: 13, padding: "3px 7px", background: "none", opacity: clip ? 0.8 : 0.3 }}
+          title={clip ? tpl(t.pasteToDbTitle, { src: clipLabel(clip) }) : t.clipboardEmpty}
+        >📋</button>
+        <button
           onClick={e => { e.stopPropagation(); onDump(); }}
           style={{ fontSize: 13, padding: "3px 7px", background: "none", opacity: 0.6 }}
           title={t.dumpTitle}
@@ -525,6 +564,7 @@ function DbNode({
             <div
               key={col}
               onClick={() => { if (!isDropping) onSelectCollection(col); }}
+              onContextMenu={e => { e.preventDefault(); setColMenu({ col, x: e.clientX, y: e.clientY }); }}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 padding: "2px 6px", cursor: isDropping ? "progress" : "pointer", borderRadius: 3,
@@ -536,6 +576,11 @@ function DbNode({
                 {col}
               </span>
               <button
+                onClick={e => { e.stopPropagation(); onCopyCollection(col); }}
+                style={{ fontSize: 12, padding: "2px 6px", color: "var(--text-muted)", background: "none", opacity: 0.5 }}
+                title={t.copy}
+              >⧉</button>
+              <button
                 onClick={e => { e.stopPropagation(); onDropCollection(col); }}
                 disabled={isDropping}
                 style={{ fontSize: 12, padding: "2px 6px", color: "var(--text-muted)", background: "none", opacity: 0.5 }}
@@ -546,6 +591,41 @@ function DbNode({
             </div>
             );
           })}
+
+          {colMenu && (
+            <ContextMenu
+              x={colMenu.x}
+              y={colMenu.y}
+              onClose={() => setColMenu(null)}
+              items={[
+                { label: t.copy, onClick: () => onCopyCollection(colMenu.col) },
+                { label: t.paste, disabled: !clip, onClick: () => onPaste(colMenu.col) },
+              ]}
+            />
+          )}
+
+          {pasteName !== null && (
+            <div style={{ display: "flex", gap: 3, padding: "2px 0" }}>
+              <input
+                value={pasteName}
+                onChange={e => setPasteName(e.target.value)}
+                placeholder={t.pasteNamePlaceholder}
+                style={{ flex: 1 }}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && pasteName.trim()) { onPaste(pasteName.trim()); setPasteName(null); }
+                  if (e.key === "Escape") setPasteName(null);
+                }}
+                autoFocus
+              />
+              <button
+                className="primary"
+                disabled={!pasteName.trim()}
+                onClick={() => { onPaste(pasteName.trim()); setPasteName(null); }}
+                style={{ fontSize: 12 }}
+              >{t.paste}</button>
+              <button onClick={() => setPasteName(null)} style={{ fontSize: 12 }}>✕</button>
+            </div>
+          )}
 
           {showInput ? (
             <div style={{ display: "flex", gap: 3, padding: "2px 0" }}>
