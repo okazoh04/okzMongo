@@ -24,6 +24,7 @@ function KeyEditor({ initialValue, onCommit, onCancel, onSaveNow }: KeyEditorPro
   const ref = useRef<HTMLInputElement>(null);
   const [val, setVal] = useState(initialValue);
   const [err, setErr] = useState<string | null>(null);
+  const done = useRef(false);
 
   useEffect(() => {
     ref.current?.focus();
@@ -32,6 +33,7 @@ function KeyEditor({ initialValue, onCommit, onCancel, onSaveNow }: KeyEditorPro
   }, []);
 
   const commit = (thenSave: boolean) => {
+    if (done.current) return;
     const trimmed = val.trim();
     if (!trimmed) {
       setErr(t.treeKeyEmpty);
@@ -42,6 +44,7 @@ function KeyEditor({ initialValue, onCommit, onCancel, onSaveNow }: KeyEditorPro
       setErr(error);
       return;
     }
+    done.current = true;
     setErr(null);
     if (thenSave) onSaveNow();
   };

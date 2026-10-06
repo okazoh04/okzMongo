@@ -73,11 +73,12 @@ export default function DocumentTree({ value, onChange, onSave, readOnly = false
     if (result === null) return t.treeDuplicateKey;
     onChange?.(result.doc as Record<string, unknown>);
     if (editing?.thenEditValue) {
+      // 値エディタが自分でフォーカスを取るため、ルートへ戻すと blur で即確定・終了してしまう
       setEditing({ path: result.newPath, field: "value" });
     } else {
       setEditing(null);
+      refocusRoot();
     }
-    refocusRoot();
     return null;
   };
 
