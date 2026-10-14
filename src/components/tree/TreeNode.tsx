@@ -148,6 +148,10 @@ export default function TreeNode(props: TreeNodeProps) {
     }
     setError(null);
     onCommitEdit(path, result.value);
+    // null から型を選んだ場合は、続けて値を入力できるよう編集モードへ移る
+    if (type === "null" && newType !== "null" && newType !== "bool" && newType !== "array" && newType !== "object") {
+      onStartEditValue(path);
+    }
   };
 
   return (

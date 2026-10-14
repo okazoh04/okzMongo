@@ -89,11 +89,13 @@ export function coerceType(value: unknown, newType: BsonTypeTag): CoerceResult {
     case "null":
       return { ok: true, value: null };
     case "date": {
+      if (raw === null || raw === undefined) return { ok: true, value: { $date: Date.now() } };
       const n = typeof raw === "number" ? raw : Date.parse(String(raw));
       if (!Number.isFinite(n)) return { ok: false, error: "日付に変換できません" };
       return { ok: true, value: { $date: n } };
     }
     case "objectId": {
+      if (raw === null || raw === undefined) return { ok: true, value: { $oid: "0".repeat(24) } };
       const s = String(raw);
       if (!/^[0-9a-fA-F]{24}$/.test(s)) return { ok: false, error: "ObjectIdは24桁の16進数である必要があります" };
       return { ok: true, value: { $oid: s } };
