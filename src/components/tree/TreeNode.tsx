@@ -227,6 +227,9 @@ export default function TreeNode(props: TreeNodeProps) {
               whiteSpace: "nowrap",
               flex: 1,
               minWidth: 0,
+              // 空文字の値は表示が空になり高さが潰れてクリックできなくなるため、最低高さを確保する
+              minHeight: 22,
+              lineHeight: "22px",
               cursor: !isContainer && !readOnly ? "text" : undefined,
             }}
           >
