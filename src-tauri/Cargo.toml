@@ -1,6 +1,6 @@
 [package]
 name = "okzmongo"
-version = "0.18.3"
+version = "0.18.4"
 description = "MongoDB GUI Client"
 authors = ["Trievo"]
 license = "MIT"
@@ -34,6 +34,7 @@ russh-keys = "0.46"
 async-trait = "0.1"
 
 [profile.dev]
+debug = "line-tables-only"
 incremental = true
 
 [profile.release]

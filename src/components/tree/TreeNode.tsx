@@ -4,6 +4,7 @@ import {
   formatDisplayValue,
   formatJsonPreview,
   coerceType,
+  convertType,
   unwrapValue,
   type BsonTypeTag,
 } from "../../lib/bsonTypes";
@@ -141,7 +142,7 @@ export default function TreeNode(props: TreeNodeProps) {
   };
 
   const applyType = (newType: BsonTypeTag) => {
-    const result = coerceType(value, newType);
+    const result = convertType(value, newType);
     if (!result.ok) {
       setError(result.error);
       return;

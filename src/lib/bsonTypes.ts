@@ -59,6 +59,36 @@ export function unwrapValue(value: unknown): unknown {
 
 export type CoerceResult = { ok: true; value: unknown } | { ok: false; error: string };
 
+/** 型を変更するときの変換。現在値と矛盾して変換できない場合は、新しい型の初期値で置き換える */
+export function convertType(value: unknown, newType: BsonTypeTag): CoerceResult {
+  const result = coerceType(value, newType);
+  if (result.ok) return result;
+  switch (newType) {
+    case "string":
+      return { ok: true, value: "" };
+    case "int32":
+      return { ok: true, value: { $numberInt: "0" } };
+    case "int64":
+      return { ok: true, value: { $numberLong: "0" } };
+    case "double":
+      return { ok: true, value: 0 };
+    case "bool":
+      return { ok: true, value: false };
+    case "null":
+      return { ok: true, value: null };
+    case "date":
+      return { ok: true, value: { $date: Date.now() } };
+    case "objectId":
+      return { ok: true, value: { $oid: "0".repeat(24) } };
+    case "array":
+      return { ok: true, value: [] };
+    case "object":
+      return { ok: true, value: {} };
+    default:
+      return result;
+  }
+}
+
 /** 値を指定した型へ変換する。失敗時は変換前の値を維持できるようokフラグで返す */
 export function coerceType(value: unknown, newType: BsonTypeTag): CoerceResult {
   const raw = unwrapValue(value);
