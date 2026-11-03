@@ -258,13 +258,18 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
                 alignItems: "flex-start",
               }}
             >
-              <input
-                type="checkbox"
-                checked={selectedIds.has(idKey(doc))}
-                onChange={() => toggleSelected(idKey(doc))}
-                title={t.selectForCopy}
-                style={{ marginTop: 3, flexShrink: 0 }}
-              />
+              {/* 選択欄の上では mousedown の既定動作（テキスト選択の開始）を止める。Shift/ドラッグで選択欄を広げる時に文字が選ばれないようにするため */}
+              <div
+                onMouseDown={e => e.preventDefault()}
+                style={{ marginTop: 3, flexShrink: 0, userSelect: "none", display: "flex" }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(idKey(doc))}
+                  onChange={() => toggleSelected(idKey(doc))}
+                  title={t.selectForCopy}
+                />
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 {dirty && (
                   <div style={{ fontSize: 10, color: "var(--yellow)", marginBottom: 3 }}>
