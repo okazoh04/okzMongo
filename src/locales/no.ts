@@ -123,6 +123,8 @@ const no = {
   version: "Versjon",
   license: "MIT-lisens",
   close: "Lukk",
+  minimize: "Minimer",
+  maximize: "Maksimer",
   langLabel: "Språk",
   queryPad: "Spørring",
   documents: "Dokumenter",

@@ -123,6 +123,8 @@ const ko = {
   version: "버전",
   license: "MIT License",
   close: "닫기",
+  minimize: "최소화",
+  maximize: "최대화",
   langLabel: "언어",
   queryPad: "쿼리",
   documents: "문서",

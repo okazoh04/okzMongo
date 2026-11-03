@@ -123,6 +123,8 @@ const en = {
   version: "Version",
   license: "MIT License",
   close: "Close",
+  minimize: "Minimize",
+  maximize: "Maximize",
   langLabel: "Language",
   queryPad: "Query",
   documents: "Documents",

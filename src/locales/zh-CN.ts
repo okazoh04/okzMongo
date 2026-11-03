@@ -123,6 +123,8 @@ const zhCN = {
   version: "版本",
   license: "MIT License",
   close: "关闭",
+  minimize: "最小化",
+  maximize: "最大化",
   langLabel: "语言",
   queryPad: "查询",
   documents: "文档",

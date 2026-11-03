@@ -123,6 +123,8 @@ const nl = {
   version: "Versie",
   license: "MIT-licentie",
   close: "Sluiten",
+  minimize: "Minimaliseren",
+  maximize: "Maximaliseren",
   langLabel: "Taal",
   queryPad: "Query",
   documents: "Documenten",

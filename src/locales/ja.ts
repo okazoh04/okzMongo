@@ -123,6 +123,8 @@ const ja = {
   version: "バージョン",
   license: "MIT License",
   close: "閉じる",
+  minimize: "最小化",
+  maximize: "最大化",
   langLabel: "言語",
   queryPad: "クエリ",
   documents: "ドキュメント",

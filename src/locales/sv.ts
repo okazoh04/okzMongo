@@ -123,6 +123,8 @@ const sv = {
   version: "Version",
   license: "MIT-licens",
   close: "Stäng",
+  minimize: "Minimera",
+  maximize: "Maximera",
   langLabel: "Språk",
   queryPad: "Fråga",
   documents: "Dokument",

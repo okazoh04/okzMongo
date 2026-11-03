@@ -123,6 +123,8 @@ const vi = {
   version: "Phiên bản",
   license: "Giấy phép MIT",
   close: "Đóng",
+  minimize: "Thu nhỏ",
+  maximize: "Phóng to",
   langLabel: "Ngôn ngữ",
   queryPad: "Truy vấn",
   documents: "Tài liệu",

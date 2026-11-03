@@ -123,6 +123,8 @@ const kk = {
   version: "Нұсқа",
   license: "MIT лицензиясы",
   close: "Жабу",
+  minimize: "Кішірейту",
+  maximize: "Үлкейту",
   langLabel: "Тіл",
   queryPad: "Сұраныс",
   documents: "Құжаттар",

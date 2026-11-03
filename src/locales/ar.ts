@@ -123,6 +123,8 @@ const ar = {
   version: "الإصدار",
   license: "ترخيص MIT",
   close: "إغلاق",
+  minimize: "تصغير",
+  maximize: "تكبير",
   langLabel: "اللغة",
   queryPad: "الاستعلام",
   documents: "المستندات",

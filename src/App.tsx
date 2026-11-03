@@ -7,6 +7,7 @@ import Sidebar from "./components/Sidebar";
 import DocumentList from "./components/DocumentList";
 import QueryPad from "./components/QueryPad";
 import About from "./components/About";
+import TitleBar, { ResizeHandles } from "./components/TitleBar";
 import PolicySettings from "./components/PolicySettings";
 import QueryLogPanel, { QueryLogEntry } from "./components/QueryLogPanel";
 import { ENV_COLOR } from "./policy";
@@ -139,38 +140,19 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-      {/* タイトルバー */}
-      <div style={{
-        background: "var(--bg3)",
-        borderBottom: "1px solid var(--border)",
-        padding: "5px 16px",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        flexShrink: 0,
-      }}>
-        <span style={{ fontWeight: 700, color: "var(--accent2)", fontSize: 14 }}>okzMongo</span>
-        {activeConn && selected && (
-          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            <span style={{ color: "var(--green)" }}>{activeConn.name}</span>
-            <span style={{ margin: "0 4px" }}>▸</span>
-            <span style={{ color: "var(--yellow)" }}>{selected.db}</span>
-            <span style={{ margin: "0 4px" }}>▸</span>
-            <span>{selected.collection}</span>
-          </span>
+      <TitleBar
+        onOpenSettings={() => setShowPolicySettings(true)}
+        onOpenAbout={() => setShowAbout(true)}
+        breadcrumb={activeConn && selected && (
+          <>
+            <span data-tauri-drag-region style={{ color: "var(--green)" }}>{activeConn.name}</span>
+            <span data-tauri-drag-region className="titlebar-sep">▸</span>
+            <span data-tauri-drag-region style={{ color: "var(--yellow)" }}>{selected.db}</span>
+            <span data-tauri-drag-region className="titlebar-sep">▸</span>
+            <span data-tauri-drag-region>{selected.collection}</span>
+          </>
         )}
-        <div style={{ flex: 1 }} />
-        <button
-          onClick={() => setShowPolicySettings(true)}
-          style={{ fontSize: 16, padding: "3px 9px", opacity: 0.7 }}
-          title={t.policySettingsTitle}
-        >⚙️</button>
-        <button
-          onClick={() => setShowAbout(true)}
-          style={{ fontSize: 13, padding: "3px 10px", opacity: 0.7 }}
-          title={t.about}
-        >?</button>
-      </div>
+      />
 
       {/* ボディ */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -335,7 +317,7 @@ export default function App() {
         height: 24,
         display: "flex",
         alignItems: "center",
-        padding: "0 8px",
+        padding: "0 10px",
         flexShrink: 0,
         position: "relative",
       }}>
@@ -350,7 +332,7 @@ export default function App() {
         <button
           onClick={toggleQueryLog}
           style={{
-            background: "none", border: "none", cursor: "pointer", fontSize: 12, padding: "0 6px",
+            background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: "0 6px",
             color: showQueryLog ? "var(--accent)" : "var(--text-muted)",
           }}
         >{t.queryLog} ({queryLog.length})</button>
@@ -391,6 +373,7 @@ export default function App() {
       </div>
       {showAbout && <About onClose={() => setShowAbout(false)} />}
       {showPolicySettings && <PolicySettings onClose={() => setShowPolicySettings(false)} />}
+      <ResizeHandles />
     </div>
   );
 }

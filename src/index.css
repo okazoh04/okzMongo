@@ -31,12 +31,14 @@ html, body, #root {
   font-size: 13px;
 }
 
+/* ボタン・入力欄の大きさは okzTerminal / okzFile / okzTorrent と同じ（高さ 24px・角丸 6px・文字 12px） */
 button {
   cursor: pointer;
   border: none;
   border-radius: 6px;
-  padding: 7px 16px;
-  font-size: 14px;
+  min-height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
   background: var(--surface);
   color: var(--text);
   transition: background 0.15s;
@@ -57,13 +59,25 @@ button.danger {
 }
 button.danger:hover { opacity: 0.85; }
 
-input, textarea, select {
+input, select {
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
-  padding: 8px 12px;
-  font-size: 14px;
+  height: 24px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+textarea {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 6px 8px;
+  font-size: 12px;
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s;
@@ -75,10 +89,10 @@ input:focus, textarea:focus, select:focus {
 select {
   appearance: none;
   -webkit-appearance: none;
-  padding: 6px 26px 6px 10px;
+  padding: 2px 22px 2px 8px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236c7086' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
+  background-position: right 8px center;
 }
 
 select option {
@@ -89,3 +103,62 @@ select option {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg2); }
 ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+/* 自前のタイトルバー（TitleBar.tsx）。okzTorrent・okzTerminal・okzFile と同じ: 高さ 31px、地は一番濃い色、下に 1px の線 */
+.titlebar {
+  height: 31px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  font-size: 12px;
+}
+.titlebar-title {
+  margin-left: 10px;
+  color: var(--accent2);
+  font-weight: 700;
+  font-size: 14px;
+}
+.titlebar-crumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  color: var(--text-muted);
+}
+.titlebar-sep {
+  color: var(--text-muted);
+}
+/* 窓の操作ボタン・設定・About: 22px の円形。印は 18px の線画（文字色で描く） */
+button.winbtn {
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+button.winbtn:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+button.winbtn.winclose:hover {
+  background: var(--red);
+  color: var(--bg3);
+}
+button.winbtn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}

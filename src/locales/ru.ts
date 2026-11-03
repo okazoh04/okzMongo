@@ -123,6 +123,8 @@ const ru = {
   version: "Версия",
   license: "Лицензия MIT",
   close: "Закрыть",
+  minimize: "Свернуть",
+  maximize: "Развернуть",
   langLabel: "Язык",
   queryPad: "Запрос",
   documents: "Документы",

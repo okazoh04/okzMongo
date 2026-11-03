@@ -123,6 +123,8 @@ const th = {
   version: "เวอร์ชัน",
   license: "สัญญาอนุญาต MIT",
   close: "ปิด",
+  minimize: "ย่อ",
+  maximize: "ขยาย",
   langLabel: "ภาษา",
   queryPad: "แบบสอบถาม",
   documents: "เอกสาร",

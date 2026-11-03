@@ -123,6 +123,8 @@ const fr = {
   version: "Version",
   license: "Licence MIT",
   close: "Fermer",
+  minimize: "Réduire",
+  maximize: "Agrandir",
   langLabel: "Langue",
   queryPad: "Requête",
   documents: "Documents",

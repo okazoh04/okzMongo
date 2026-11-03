@@ -123,6 +123,8 @@ const zhTW = {
   version: "版本",
   license: "MIT License",
   close: "關閉",
+  minimize: "最小化",
+  maximize: "最大化",
   langLabel: "語言",
   queryPad: "查詢",
   documents: "文件",
