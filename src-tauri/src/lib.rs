@@ -43,6 +43,7 @@ pub fn run() {
             delete_document,
             drop_collection,
             create_collection,
+            rename_database,
             // インポート/エクスポート
             export_collection,
             import_collection,

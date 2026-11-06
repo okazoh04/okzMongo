@@ -7,6 +7,7 @@ import { ConnectionForm } from "./ConnectionForm";
 import { ConnectDiagnostics } from "./ConnectDiagnostics";
 import ContextMenu from "./ContextMenu";
 import { useI18n } from "../i18n";
+import { useNotice } from "../NoticeProvider";
 import { ENV_LABEL_KEY, ENV_COLOR } from "../policy";
 import { usePolicy } from "../PolicyProvider";
 import { useClipboard, clipLabel } from "../ClipboardProvider";
@@ -31,6 +32,7 @@ export default function Sidebar({
   onRefresh,
 }: Props) {
   const { t, tpl } = useI18n();
+  const { notify } = useNotice();
   const { guard } = usePolicy();
   const { copy, paste } = useClipboard();
   const [expandedDbs, setExpandedDbs] = useState<Record<string, Set<string>>>({});
@@ -41,6 +43,10 @@ export default function Sidebar({
   const [connProgress, setConnProgress] = useState<Record<string, Partial<Record<ConnectStage, ConnectStageStatus>>>>({});
   const [dropping, setDropping] = useState<Set<string>>(new Set());
   const [editTarget, setEditTarget] = useState<"new" | string | null>(null);
+  /** コレクション一括削除用の選択状態（キーは `${connectionId}::${db}`） */
+  const [selCols, setSelCols] = useState<Record<string, Set<string>>>({});
+  const [renameTarget, setRenameTarget] = useState<{ connectionId: string; db: string; value: string } | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
   const [connMenu, setConnMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [newDbInput, setNewDbInput] = useState<Record<string, { dbName: string; colName: string } | null>>({});
 
@@ -172,10 +178,87 @@ export default function Sidebar({
     try {
       await invoke("drop_collection", { connectionId, dbName: db, collectionName: col });
     } catch (e) {
-      alert(String(e));
+      notify(String(e));
     } finally {
       setDropping(prev => { const n = new Set(prev); n.delete(key); return n; });
       await refreshCollections(connectionId, db);
+    }
+  };
+
+  const colKeyOf = (connectionId: string, db: string) => `${connectionId}::${db}`;
+
+  const toggleColSelected = (connectionId: string, db: string, col: string) => {
+    const key = colKeyOf(connectionId, db);
+    setSelCols(prev => {
+      const set = new Set(prev[key] ?? []);
+      if (set.has(col)) set.delete(col); else set.add(col);
+      return { ...prev, [key]: set };
+    });
+  };
+
+  const setAllColsSelected = (connectionId: string, db: string, cols: string[], on: boolean) => {
+    setSelCols(prev => ({ ...prev, [colKeyOf(connectionId, db)]: new Set(on ? cols : []) }));
+  };
+
+  /** 選択中のコレクションを順に削除する（権限ガード・確認は1回だけ。失敗分は選択を残す） */
+  const handleBulkDropCollections = async (connectionId: string, db: string, cols: string[]) => {
+    const key = colKeyOf(connectionId, db);
+    const selected = selCols[key] ?? new Set<string>();
+    const names = cols.filter(c => selected.has(c));
+    if (names.length === 0) return;
+    if (!await guard(envOf(connectionId), "dropCollection")) return;
+    if (!await confirm(tpl(t.bulkDropConfirm, { count: names.length, db }))) return;
+    const failed: string[] = [];
+    for (const col of names) {
+      const dropKey = `${key}::${col}`;
+      setDropping(prev => new Set(prev).add(dropKey));
+      try {
+        await invoke("drop_collection", { connectionId, dbName: db, collectionName: col });
+        setSelCols(prev => {
+          const set = new Set(prev[key] ?? []);
+          set.delete(col);
+          return { ...prev, [key]: set };
+        });
+      } catch (e) {
+        failed.push(`${col}: ${String(e)}`);
+      } finally {
+        setDropping(prev => { const n = new Set(prev); n.delete(dropKey); return n; });
+      }
+    }
+    await refreshCollections(connectionId, db);
+    if (failed.length > 0) {
+      await notify(tpl(t.bulkDropFail, { count: failed.length, detail: failed.join("\n") }));
+    }
+  };
+
+  /** DB名を変更する。MongoDB にリネーム命令は無いためバックエンドでコピー→旧コレクション削除を行う */
+  const handleRenameDatabase = async (connectionId: string, db: string, newName: string) => {
+    if (newName === db) { setRenameTarget(null); return; }
+    const key = colKeyOf(connectionId, db);
+    if (!await guard(envOf(connectionId), "dropCollection")) return;
+    if (!await confirm(tpl(t.renameDbConfirm, { db, newName }))) return;
+    setRenaming(key);
+    try {
+      await invoke("rename_database", { connectionId, dbName: db, newName });
+      setRenameTarget(null);
+      setCollections(c => { const n = { ...c }; delete n[key]; return n; });
+      setSelCols(prev => { const n = { ...prev }; delete n[key]; return n; });
+      setExpandedDbs(prev => {
+        const set = new Set(prev[connectionId] ?? []);
+        set.delete(db);
+        set.add(newName);
+        return { ...prev, [connectionId]: set };
+      });
+      if (selected?.connectionId === connectionId && selected.db === db) {
+        onSelect({ connectionId, db: newName, collection: null });
+      }
+      await loadDatabases(connectionId);
+      await refreshCollections(connectionId, newName);
+    } catch (e) {
+      await notify(tpl(t.renameDbFail, { error: String(e) }));
+      await loadDatabases(connectionId);
+    } finally {
+      setRenaming(null);
     }
   };
 
@@ -205,9 +288,9 @@ export default function Sidebar({
       const result: { collections: number; documents: number } = await invoke("dump_database", {
         connectionId, dbName: db, filePath: path,
       });
-      alert(tpl(t.dumpSuccess, { col: result.collections, doc: result.documents.toLocaleString() }));
+      notify(tpl(t.dumpSuccess, { col: result.collections, doc: result.documents.toLocaleString() }));
     } catch (e) {
-      alert(tpl(t.dumpFail, { error: String(e) }));
+      notify(tpl(t.dumpFail, { error: String(e) }));
     }
   };
 
@@ -224,9 +307,9 @@ export default function Sidebar({
       const result: { collections: number; documents: number } = await invoke("restore_database", {
         connectionId, dbName: db, filePath: path as string, dropBefore,
       });
-      alert(tpl(t.restoreSuccess, { col: result.collections, doc: result.documents.toLocaleString() }));
+      notify(tpl(t.restoreSuccess, { col: result.collections, doc: result.documents.toLocaleString() }));
     } catch (e) {
-      alert(tpl(t.restoreFail, { error: String(e) }));
+      notify(tpl(t.restoreFail, { error: String(e) }));
     }
   };
 
@@ -419,6 +502,16 @@ export default function Sidebar({
                         onRestore={() => handleRestore(conn.id, db)}
                         onCopyCollection={col => handleCopyCollection(conn.id, db, col)}
                         onPaste={name => handlePaste(conn.id, db, name)}
+                        renameValue={renameTarget?.connectionId === conn.id && renameTarget.db === db ? renameTarget.value : null}
+                        renaming={renaming === colKeyOf(conn.id, db)}
+                        onRenameStart={() => setRenameTarget({ connectionId: conn.id, db, value: db })}
+                        onRenameChange={v => setRenameTarget(prev => (prev ? { ...prev, value: v } : prev))}
+                        onRenameCancel={() => setRenameTarget(null)}
+                        onRenameCommit={v => handleRenameDatabase(conn.id, db, v)}
+                        selectedCols={selCols[colKeyOf(conn.id, db)] ?? new Set<string>()}
+                        onToggleCol={col => toggleColSelected(conn.id, db, col)}
+                        onToggleAllCols={on => setAllColsSelected(conn.id, db, cols, on)}
+                        onBulkDrop={() => handleBulkDropCollections(conn.id, db, cols)}
                       />
                     );
                   })}
@@ -480,6 +573,8 @@ function DbNode({
   db, isExpanded, collections, onToggle, onSelectDb, onSelectCollection,
   selectedCollection, onCreateCollection, onReload, droppingCollections, onDropCollection, onDump, onRestore,
   onCopyCollection, onPaste,
+  renameValue, renaming, onRenameStart, onRenameChange, onRenameCancel, onRenameCommit,
+  selectedCols, onToggleCol, onToggleAllCols, onBulkDrop,
 }: {
   db: string;
   isExpanded: boolean;
@@ -496,13 +591,26 @@ function DbNode({
   onRestore: () => void;
   onCopyCollection: (col: string) => void;
   onPaste: (name: string) => void;
+  renameValue: string | null;
+  renaming: boolean;
+  onRenameStart: () => void;
+  onRenameChange: (value: string) => void;
+  onRenameCancel: () => void;
+  onRenameCommit: (value: string) => void;
+  selectedCols: Set<string>;
+  onToggleCol: (col: string) => void;
+  onToggleAllCols: (on: boolean) => void;
+  onBulkDrop: () => void;
 }) {
   const { t, tpl } = useI18n();
+  const { notify } = useNotice();
   const { clip } = useClipboard();
   const [colMenu, setColMenu] = useState<{ col: string; x: number; y: number } | null>(null);
   const [pasteName, setPasteName] = useState<string | null>(null);
   const [newColName, setNewColName] = useState("");
   const [showInput, setShowInput] = useState(false);
+  const selectedCount = collections.filter(c => selectedCols.has(c)).length;
+  const allChecked = collections.length > 0 && selectedCount === collections.length;
 
   return (
     <div>
@@ -527,6 +635,12 @@ function DbNode({
           title={t.queryPad}
         >⌨</button>
         <button
+          onClick={e => { e.stopPropagation(); onRenameStart(); }}
+          disabled={renaming}
+          style={{ fontSize: 13, padding: "3px 7px", background: "none", opacity: 0.6 }}
+          title={t.renameDbTitle}
+        >✎</button>
+        <button
           onClick={e => { e.stopPropagation(); onReload(); }}
           style={{ fontSize: 13, padding: "3px 7px", background: "none", opacity: 0.6 }}
           title={t.reloadTitle}
@@ -534,7 +648,7 @@ function DbNode({
         <button
           onClick={e => {
             e.stopPropagation();
-            if (!clip) { alert(t.clipboardEmpty); return; }
+            if (!clip) { notify(t.clipboardEmpty); return; }
             if (!isExpanded) onToggle();
             setPasteName(clip.kind === "collection"
               ? (collections.includes(clip.collection) ? `${clip.collection}_copy` : clip.collection)
@@ -556,8 +670,53 @@ function DbNode({
         >⬆</button>
       </div>
 
+      {renameValue !== null && (
+        <div style={{ display: "flex", gap: 3, padding: "2px 6px 4px 18px" }}>
+          <input
+            value={renameValue}
+            onChange={e => onRenameChange(e.target.value)}
+            placeholder={t.renameDbPlaceholder}
+            style={{ flex: 1 }}
+            disabled={renaming}
+            autoFocus
+            onKeyDown={e => {
+              if (e.key === "Enter" && renameValue.trim()) onRenameCommit(renameValue.trim());
+              if (e.key === "Escape") onRenameCancel();
+            }}
+          />
+          <button
+            className="primary"
+            disabled={renaming || !renameValue.trim()}
+            onClick={() => onRenameCommit(renameValue.trim())}
+            style={{ fontSize: 12 }}
+          >{t.ok}</button>
+          <button onClick={onRenameCancel} disabled={renaming} style={{ fontSize: 12 }}>✕</button>
+        </div>
+      )}
+
       {isExpanded && (
         <div style={{ paddingLeft: 16 }}>
+          {collections.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 6px", fontSize: 12, color: "var(--text-muted)" }}>
+              <input
+                type="checkbox"
+                checked={allChecked}
+                ref={el => { if (el) el.indeterminate = selectedCount > 0 && !allChecked; }}
+                onChange={() => onToggleAllCols(!allChecked)}
+                disabled={renaming}
+              />
+              <span style={{ flex: 1 }}>{t.selectAll}</span>
+              {selectedCount > 0 && (
+                <button
+                  onClick={onBulkDrop}
+                  disabled={renaming}
+                  style={{ fontSize: 12, padding: "2px 8px", color: "var(--red)" }}
+                >
+                  {tpl(t.bulkDropButton, { count: selectedCount })}
+                </button>
+              )}
+            </div>
+          )}
           {collections.map(col => {
             const isDropping = droppingCollections.has(col);
             return (
@@ -572,6 +731,14 @@ function DbNode({
                 background: selectedCollection === col ? "var(--surface2)" : "transparent",
               }}
             >
+              <input
+                type="checkbox"
+                checked={selectedCols.has(col)}
+                onChange={() => onToggleCol(col)}
+                onClick={e => e.stopPropagation()}
+                disabled={isDropping}
+                style={{ margin: "0 6px 0 0", flexShrink: 0 }}
+              />
               <span style={{ fontSize: 12, color: "var(--text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {col}
               </span>

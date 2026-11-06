@@ -81,6 +81,21 @@ pub async fn copy_documents(
         ext_json_to_doc(v)?
     };
 
+    let mut stats = copy_collection_docs(&src_col, &dst_col, filter, regenerate_ids).await?;
+
+    if copy_indexes {
+        stats.indexes = copy_index_definitions(&src_col, &dst_col).await;
+    }
+    Ok(stats)
+}
+
+/// filter に一致するドキュメントを BATCH_SIZE 単位で dst へ挿入する（インデックスは扱わない）
+pub(crate) async fn copy_collection_docs(
+    src_col: &mongodb::Collection<RawDocumentBuf>,
+    dst_col: &mongodb::Collection<RawDocumentBuf>,
+    filter: Document,
+    regenerate_ids: bool,
+) -> Result<CopyStats, String> {
     let mut cursor = src_col
         .find(filter)
         .await
@@ -105,26 +120,22 @@ pub async fn copy_documents(
         batch.push(raw);
         if batch.len() >= BATCH_SIZE {
             let n = batch.len() as u64;
-            let skipped = insert_batch(&dst_col, std::mem::take(&mut batch)).await?;
+            let skipped = insert_batch(dst_col, std::mem::take(&mut batch)).await?;
             stats.copied += n - skipped;
             stats.skipped += skipped;
         }
     }
     if !batch.is_empty() {
         let n = batch.len() as u64;
-        let skipped = insert_batch(&dst_col, batch).await?;
+        let skipped = insert_batch(dst_col, batch).await?;
         stats.copied += n - skipped;
         stats.skipped += skipped;
-    }
-
-    if copy_indexes {
-        stats.indexes = copy_index_definitions(&src_col, &dst_col).await;
     }
     Ok(stats)
 }
 
 /// `_id_` 以外のインデックス定義を複製する（失敗しても全体は成功扱い、作成できた件数を返す）
-async fn copy_index_definitions(
+pub(crate) async fn copy_index_definitions(
     src: &mongodb::Collection<RawDocumentBuf>,
     dst: &mongodb::Collection<RawDocumentBuf>,
 ) -> u64 {

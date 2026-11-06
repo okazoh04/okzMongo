@@ -1,6 +1,7 @@
 use crate::commands::bson_json::{
     doc_to_ext_json as doc_to_json, ext_json_to_doc as json_to_doc, raw_doc_to_document,
 };
+use crate::commands::copy::{copy_collection_docs, copy_index_definitions};
 use crate::state::AppState;
 use bson::{Document, RawDocumentBuf};
 use futures_util::TryStreamExt;
@@ -228,6 +229,72 @@ pub async fn drop_collection(
     }
     .await;
     rec.finish(res, |_| "ok".to_string())
+}
+
+/// MongoDB のDB名として使えない文字・長さを検証する
+fn validate_db_name(name: &str) -> Result<(), String> {
+    if name.is_empty() || name.len() > 63 {
+        return Err("DB名は1〜63バイトで指定してください".to_string());
+    }
+    if name.chars().any(|c| matches!(c, '/' | '\\' | '.' | ' ' | '"' | '$' | '*' | '<' | '>' | ':' | '|' | '?' | '\0')) {
+        return Err(format!("DB名 '{name}' に使用できない文字が含まれています"));
+    }
+    Ok(())
+}
+
+/// DB名を変更する。MongoDB にはDB単位のリネーム命令が無いため、
+/// 全コレクションを新DBへ（_idを保持し、インデックス込みで）コピーしてから旧コレクションを削除する。
+/// コピー途中で失敗した場合は旧DBを削除しないので元データは残る（移動先には一部コピーが残りうる）。
+#[tauri::command]
+pub async fn rename_database(
+    state: State<'_, AppState>,
+    connection_id: String,
+    db_name: String,
+    new_name: String,
+    app: AppHandle,
+) -> Result<u64, String> {
+    let rec = Recorder::start(&app, &connection_id, &db_name, "", format!("// renameDatabase({db_name:?} -> {new_name:?})"));
+    let res: Result<u64, String> = async {
+        validate_db_name(&new_name)?;
+        if new_name == db_name {
+            return Err("新しい名前が現在の名前と同じです".to_string());
+        }
+        let client = get_client(&state, &connection_id)?;
+        let src_db = client.database(&db_name);
+        let dst_db = client.database(&new_name);
+
+        let names = src_db
+            .list_collection_names()
+            .await
+            .map_err(|e| format!("コレクションリスト取得失敗: {e}"))?;
+        if names.is_empty() {
+            return Err(format!("DB '{db_name}' にコレクションがありません（MongoDBは空のDBを保持しないため変更できません）"));
+        }
+        let existing = dst_db
+            .list_collection_names()
+            .await
+            .map_err(|e| format!("コレクションリスト取得失敗: {e}"))?;
+        if let Some(dup) = names.iter().find(|n| existing.contains(n)) {
+            return Err(format!("移動先 '{new_name}' に同名のコレクション '{dup}' が既にあります"));
+        }
+
+        for name in &names {
+            let src = src_db.collection::<RawDocumentBuf>(name);
+            let dst = dst_db.collection::<RawDocumentBuf>(name);
+            copy_collection_docs(&src, &dst, Document::new(), false).await?;
+            copy_index_definitions(&src, &dst).await;
+        }
+        for name in &names {
+            src_db
+                .collection::<Document>(name)
+                .drop()
+                .await
+                .map_err(|e| format!("旧コレクション '{name}' の削除失敗（コピーは完了済み）: {e}"))?;
+        }
+        Ok(names.len() as u64)
+    }
+    .await;
+    rec.finish(res, |n| format!("{n}件のコレクションを移動"))
 }
 
 #[tauri::command]

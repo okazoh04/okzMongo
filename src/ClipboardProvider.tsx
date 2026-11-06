@@ -4,6 +4,7 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import { EnvironmentTier } from "./types";
 import { usePolicy } from "./PolicyProvider";
 import { useI18n } from "./i18n";
+import { useNotice } from "./NoticeProvider";
 
 /** アプリ内クリップボード。実データは持たず「どこから何をコピーしたか」だけを保持し、貼り付け時にRust側で直接転送する */
 export interface ClipItem {
@@ -50,13 +51,14 @@ export function clipLabel(c: ClipItem): string {
 
 export function ClipboardProvider({ children }: { children: ReactNode }) {
   const { t, tpl } = useI18n();
+  const { notify } = useNotice();
   const { guard } = usePolicy();
   const [clip, setClip] = useState<ClipItem | null>(null);
 
   const copy = useCallback((item: ClipItem) => setClip(item), []);
 
   const paste = useCallback(async (target: PasteTarget): Promise<boolean> => {
-    if (!clip) { alert(t.clipboardEmpty); return false; }
+    if (!clip) { notify(t.clipboardEmpty); return false; }
     const op = clip.kind === "collection" ? "importCollection" : "insertDoc";
     if (!await guard(target.environment, op)) return false;
 
@@ -77,10 +79,10 @@ export function ClipboardProvider({ children }: { children: ReactNode }) {
         regenerateIds: same,
         copyIndexes: clip.kind === "collection" && !same,
       });
-      alert(tpl(t.pasteDone, { copied: r.copied.toLocaleString(), skipped: r.skipped.toLocaleString(), indexes: r.indexes }));
+      notify(tpl(t.pasteDone, { copied: r.copied.toLocaleString(), skipped: r.skipped.toLocaleString(), indexes: r.indexes }));
       return true;
     } catch (e) {
-      alert(tpl(t.pasteFail, { error: String(e) }));
+      notify(tpl(t.pasteFail, { error: String(e) }));
       return false;
     }
   }, [clip, guard, t, tpl]);

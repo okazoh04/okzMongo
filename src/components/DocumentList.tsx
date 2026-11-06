@@ -5,6 +5,7 @@ import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import DocumentEditor from "./DocumentEditor";
 import DocumentTree from "./tree/DocumentTree";
 import { useI18n } from "../i18n";
+import { useNotice } from "../NoticeProvider";
 import { unwrapValue } from "../lib/bsonTypes";
 import { usePolicy } from "../PolicyProvider";
 import { EnvironmentTier } from "../types";
@@ -22,6 +23,7 @@ const PAGE_SIZE = 50;
 
 export default function DocumentList({ connectionId, db, collection, filterJson, environment }: Props) {
   const { t, tpl } = useI18n();
+  const { notify } = useNotice();
   const { guard } = usePolicy();
   const { clip, copy, paste } = useClipboard();
   const [docs, setDocs] = useState<Record<string, unknown>[]>([]);
@@ -81,7 +83,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
       await invoke("delete_document", { connectionId, dbName: db, collectionName: collection, id });
       load();
     } catch (e) {
-      alert(String(e));
+      notify(String(e));
     }
   };
 
@@ -113,7 +115,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
         return next;
       });
     } catch (e) {
-      alert(String(e));
+      notify(String(e));
     }
   };
 
@@ -283,6 +285,14 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
                 />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+                <button
+                  onClick={() => handleSaveRow(i)}
+                  disabled={!dirty}
+                  className="primary"
+                  style={{ fontSize: 12, padding: "5px 10px", opacity: dirty ? 1 : 0.4 }}
+                >
+                  {t.save}
+                </button>
                 {id && (
                   <button
                     onClick={() => handleDelete(id)}
