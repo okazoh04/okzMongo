@@ -39,11 +39,14 @@ pub async fn list_collections(
     db_name: String,
 ) -> Result<Vec<String>, String> {
     let client = get_client(&state, &connection_id)?;
-    client
+    let mut names = client
         .database(&db_name)
         .list_collection_names()
         .await
-        .map_err(|e| format!("コレクションリスト取得失敗: {e}"))
+        .map_err(|e| format!("コレクションリスト取得失敗: {e}"))?;
+    // サーバーは内部カタログ順で返すため、表示順が安定するよう名前順に並べ替える
+    names.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()).then_with(|| a.cmp(b)));
+    Ok(names)
 }
 
 #[tauri::command]
