@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { ConnectionConfig, SelectedItem } from "./types";
@@ -19,15 +19,35 @@ const SIDEBAR_MAX_WIDTH = 600;
 // メモリ肥大を避けるため、保持する履歴は直近この件数まで
 const QUERY_LOG_MAX = 500;
 
+// タブごとに保持する表示状態（フィルタ・サブタブ）
+interface TabState {
+  filterInput: string;
+  filterJson: string;
+  filterError: string | null;
+  subTab: "documents" | "query";
+}
+const DEFAULT_TAB_STATE: TabState = { filterInput: "{}", filterJson: "{}", filterError: null, subTab: "documents" };
+const tabKey = (s: SelectedItem) => `${s.connectionId}::${s.db}::${s.collection ?? ""}`;
+
 export default function App() {
   const { t, locale, setLocale } = useI18n();
   const [connections, setConnections] = useState<ConnectionConfig[]>([]);
   const [connectedIds, setConnectedIds] = useState<string[]>([]);
-  const [selected, setSelected] = useState<SelectedItem | null>(null);
-  const [filterJson, setFilterJson] = useState("{}");
-  const [filterInput, setFilterInput] = useState("{}");
-  const [filterError, setFilterError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"documents" | "query">("documents");
+  // 開いているタブ（コレクション／DB単位）。タブごとの表示状態は tabStates に保持する
+  const [openTabs, setOpenTabs] = useState<SelectedItem[]>([]);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [tabStates, setTabStates] = useState<Record<string, TabState>>({});
+  const selected = openTabs.find(s => tabKey(s) === activeKey) ?? null;
+  const { filterInput, filterError, subTab: activeTab } =
+    (activeKey && tabStates[activeKey]) || DEFAULT_TAB_STATE;
+  const updateActiveTab = (patch: Partial<TabState>) => {
+    if (!activeKey) return;
+    setTabStates(prev => ({ ...prev, [activeKey]: { ...(prev[activeKey] ?? DEFAULT_TAB_STATE), ...patch } }));
+  };
+  const setFilterInput = (v: string) => updateActiveTab({ filterInput: v });
+  const setFilterJson = (v: string) => updateActiveTab({ filterJson: v });
+  const setFilterError = (v: string | null) => updateActiveTab({ filterError: v });
+  const setActiveTab = (v: "documents" | "query") => updateActiveTab({ subTab: v });
   const [showAbout, setShowAbout] = useState(false);
   const [showPolicySettings, setShowPolicySettings] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
@@ -123,15 +143,40 @@ export default function App() {
 
   const handleDisconnect = (id: string) => {
     setConnectedIds(prev => prev.filter(x => x !== id));
-    if (selected?.connectionId === id) setSelected(null);
+    const remaining = openTabs.filter(s => s.connectionId !== id);
+    setOpenTabs(remaining);
+    if (selected?.connectionId === id) {
+      const last = remaining[remaining.length - 1];
+      setActiveKey(last ? tabKey(last) : null);
+    }
   };
 
+  // 既に開いているタブは切り替えるだけ（フィルタ等の状態を保持）。未済なら新規タブを追加
   const handleSelect = (item: SelectedItem) => {
-    setSelected(item);
-    setFilterInput("{}");
-    setFilterJson("{}");
-    // DBレベル選択時はクエリタブ、コレクション選択時はドキュメントタブへ
-    setActiveTab(item.collection === null ? "query" : "documents");
+    const key = tabKey(item);
+    setOpenTabs(prev => prev.some(s => tabKey(s) === key) ? prev : [...prev, item]);
+    setTabStates(prev => prev[key] ? prev : {
+      ...prev,
+      // DBレベル選択時はクエリタブ、コレクション選択時はドキュメントタブへ
+      [key]: { ...DEFAULT_TAB_STATE, subTab: item.collection === null ? "query" : "documents" },
+    });
+    setActiveKey(key);
+  };
+
+  const closeTab = (key: string) => {
+    const idx = openTabs.findIndex(s => tabKey(s) === key);
+    const next = openTabs.filter(s => tabKey(s) !== key);
+    setOpenTabs(next);
+    if (key === activeKey) {
+      // 閉じたタブの右隣（無ければ左隣）をアクティブにする
+      const neighbor = next[idx] ?? next[idx - 1];
+      setActiveKey(neighbor ? tabKey(neighbor) : null);
+    }
+    setTabStates(prev => {
+      const rest = { ...prev };
+      delete rest[key];
+      return rest;
+    });
   };
 
   const activeConn = selected
@@ -196,6 +241,52 @@ export default function App() {
           flex: 1, display: "flex", flexDirection: "column", overflow: "hidden",
           borderTop: `4px solid ${activeConn ? ENV_COLOR[activeConn.environment] : "transparent"}`,
         }}>
+          {openTabs.length > 0 && (
+            <div style={{
+              display: "flex",
+              background: "var(--bg3)",
+              borderBottom: "1px solid var(--border)",
+              flexShrink: 0,
+              overflowX: "auto",
+            }}>
+              {openTabs.map(tab => {
+                const key = tabKey(tab);
+                const isActive = key === activeKey;
+                const connName = connections.find(c => c.id === tab.connectionId)?.name ?? "";
+                return (
+                  <div
+                    key={key}
+                    title={`${connName} ▸ ${tab.db}${tab.collection !== null ? ` ▸ ${tab.collection}` : ""}`}
+                    onClick={() => setActiveKey(key)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "0 6px 0 12px",
+                      fontSize: 12,
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                      background: isActive ? "var(--bg2)" : "transparent",
+                      color: isActive ? "var(--text)" : "var(--text-muted)",
+                      borderRight: "1px solid var(--border)",
+                      borderTop: isActive ? "2px solid var(--accent)" : "2px solid transparent",
+                    }}
+                  >
+                    <span>{tab.collection !== null ? `${tab.db} ▸ ${tab.collection}` : tab.db}</span>
+                    <button
+                      title={t.close}
+                      onClick={e => { e.stopPropagation(); closeTab(key); }}
+                      style={{
+                        border: "none", background: "none", padding: "0 4px",
+                        color: "inherit", fontSize: 14, cursor: "pointer",
+                      }}
+                    >×</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {selected ? (
             <>
               {/* タブバー（コレクション選択時のみ両タブ表示、DBレベルはクエリのみ） */}
@@ -268,22 +359,41 @@ export default function App() {
               </div>
 
               <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                {activeTab === "documents" && selected.collection !== null ? (
-                  <DocumentList
-                    connectionId={selected.connectionId}
-                    db={selected.db}
-                    collection={selected.collection}
-                    filterJson={filterJson}
-                    environment={activeConn?.environment ?? "development"}
-                  />
-                ) : (
-                  <QueryPad
-                    connectionId={selected.connectionId}
-                    db={selected.db}
-                    initialQuery={selected.collection ? `db.${selected.collection}.find({})` : undefined}
-                    environment={activeConn?.environment ?? "development"}
-                  />
-                )}
+                {/* 開いている全タブを常時マウントし、非表示にするだけにする（読込済みデータや入力内容を保持） */}
+                {openTabs.map(tab => {
+                  const key = tabKey(tab);
+                  const isActive = key === activeKey;
+                  const st = tabStates[key] ?? DEFAULT_TAB_STATE;
+                  const env = connections.find(c => c.id === tab.connectionId)?.environment ?? "development";
+                  const showDocs = tab.collection !== null && st.subTab === "documents";
+                  const pane = (show: boolean): React.CSSProperties => ({
+                    display: isActive && show ? "flex" : "none",
+                    flex: 1, flexDirection: "column", overflow: "hidden",
+                  });
+                  return (
+                    <Fragment key={key}>
+                      {tab.collection !== null && (
+                        <div style={pane(showDocs)}>
+                          <DocumentList
+                            connectionId={tab.connectionId}
+                            db={tab.db}
+                            collection={tab.collection}
+                            filterJson={st.filterJson}
+                            environment={env}
+                          />
+                        </div>
+                      )}
+                      <div style={pane(!showDocs)}>
+                        <QueryPad
+                          connectionId={tab.connectionId}
+                          db={tab.db}
+                          initialQuery={tab.collection ? `db.${tab.collection}.find({})` : undefined}
+                          environment={env}
+                        />
+                      </div>
+                    </Fragment>
+                  );
+                })}
               </div>
             </>
           ) : (
