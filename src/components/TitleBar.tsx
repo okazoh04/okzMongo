@@ -17,7 +17,9 @@ interface Props {
 // ダブルクリックで最大化を切り替える。ボタンには drag-region を付けないので、ボタンは普通に押せる。
 
 // 窓の枠の掴みしろ（端の細い帯。角は斜めに掴める）
-const EDGE = 5;
+// 掴みしろは App のルート余白（EDGE 分）の中に置く。コンテンツ（縦横のスクロールバーを含む）と重ねると、
+// 掴みしろがスクロールバーを覆ってしまい、つまみを掴めなくなるため
+export const EDGE = 5;
 const CORNER = 10;
 
 const RESIZE_HANDLES: { dir: ResizeDirection; style: CSSProperties }[] = [
@@ -31,7 +33,7 @@ const RESIZE_HANDLES: { dir: ResizeDirection; style: CSSProperties }[] = [
   { dir: "SouthEast", style: { bottom: 0, right: 0, width: CORNER, height: CORNER, cursor: "nwse-resize" } },
 ];
 
-/** 窓の枠を掴んで大きさを変える帯（端と四隅）。窓の上に重ねて、どこでも変えられるようにする */
+/** 窓の枠を掴んで大きさを変える帯（端と四隅）。ルート余白の上に置き、コンテンツには重ならない */
 export function ResizeHandles() {
   return (
     <>

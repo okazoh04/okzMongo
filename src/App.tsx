@@ -7,7 +7,7 @@ import Sidebar from "./components/Sidebar";
 import DocumentList from "./components/DocumentList";
 import QueryPad from "./components/QueryPad";
 import About from "./components/About";
-import TitleBar, { ResizeHandles } from "./components/TitleBar";
+import TitleBar, { ResizeHandles, EDGE } from "./components/TitleBar";
 import PolicySettings from "./components/PolicySettings";
 import QueryLogPanel, { QueryLogEntry } from "./components/QueryLogPanel";
 import { ENV_COLOR } from "./policy";
@@ -184,7 +184,8 @@ export default function App() {
     : null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+    // 外側の EDGE px は窓の掴みしろ（TitleBar.tsx の ResizeHandles）に使う。スクロールバーをこの内側に収める
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", padding: EDGE, boxSizing: "border-box" }}>
       <TitleBar
         onOpenSettings={() => setShowPolicySettings(true)}
         onOpenAbout={() => setShowAbout(true)}
