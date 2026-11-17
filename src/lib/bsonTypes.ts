@@ -252,3 +252,6 @@ export const EDITABLE_LEAF_TYPES: BsonTypeTag[] = [
   "bool",
   "null",
 ];
+
+/** 型バッジのメニューに出す型（リーフ型に加え、空の配列・オブジェクトへの変換も可能） */
+export const EDITABLE_TYPES: BsonTypeTag[] = [...EDITABLE_LEAF_TYPES, "array", "object"];

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TYPE_ICON, TYPE_COLOR, EDITABLE_LEAF_TYPES, type BsonTypeTag } from "../../lib/bsonTypes";
+import { TYPE_ICON, TYPE_COLOR, EDITABLE_TYPES, type BsonTypeTag } from "../../lib/bsonTypes";
 
 interface Props {
   type: BsonTypeTag;
@@ -67,7 +67,7 @@ export default function TypeBadge({ type, onChangeType, readOnly }: Props) {
               minWidth: 100,
             }}
           >
-            {EDITABLE_LEAF_TYPES.map((t) => (
+            {EDITABLE_TYPES.map((t) => (
               <button
                 key={t}
                 onClick={(e) => {
