@@ -8,6 +8,8 @@ use serde_json::Value;
 use tauri::State;
 
 const BATCH_SIZE: usize = 1000;
+/// 1 バッチの合計バイト数の上限（件数が少なくても、これを超えたら挿入する）
+const BATCH_BYTES: usize = 8 * 1024 * 1024;
 const DUPLICATE_KEY_CODE: i32 = 11000;
 
 #[derive(serde::Serialize)]
@@ -103,6 +105,7 @@ pub(crate) async fn copy_collection_docs(
 
     let mut stats = CopyStats { copied: 0, skipped: 0, indexes: 0 };
     let mut batch: Vec<RawDocumentBuf> = Vec::with_capacity(BATCH_SIZE);
+    let mut batch_bytes: usize = 0;
 
     while let Some(raw) = cursor
         .try_next()
@@ -117,10 +120,13 @@ pub(crate) async fn copy_collection_docs(
         } else {
             raw
         };
+        batch_bytes += raw.as_bytes().len();
         batch.push(raw);
-        if batch.len() >= BATCH_SIZE {
+        // 件数だけで区切ると、大きいドキュメントが多い場合にバッチがメモリを使い切るため、バイト数でも区切る
+        if batch.len() >= BATCH_SIZE || batch_bytes >= BATCH_BYTES {
             let n = batch.len() as u64;
             let skipped = insert_batch(dst_col, std::mem::take(&mut batch)).await?;
+            batch_bytes = 0;
             stats.copied += n - skipped;
             stats.skipped += skipped;
         }
