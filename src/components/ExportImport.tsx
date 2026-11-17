@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { save, open } from "@tauri-apps/plugin-dialog";
-import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 
 interface Props {
   db: string;
@@ -18,19 +17,19 @@ export default function ExportImport({ db, collection }: Props) {
     setStatus(null);
     setError(null);
     try {
-      const json: string = await invoke("export_collection", {
-        dbName: db,
-        collectionName: collection,
-      });
-
       const path = await save({
         defaultPath: `${collection}.json`,
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
 
       if (path) {
-        await writeTextFile(path, json);
-        setStatus(`エクスポート完了: ${path}`);
+        // Rust 側がファイルへ直接ストリーム書き出しする（全件を文字列で受け取らない）
+        const count: number = await invoke("export_collection", {
+          dbName: db,
+          collectionName: collection,
+          filePath: path,
+        });
+        setStatus(`エクスポート完了: ${path}（${count.toLocaleString()} 件）`);
       }
     } catch (e) {
       setError(String(e));
@@ -51,11 +50,10 @@ export default function ExportImport({ db, collection }: Props) {
 
       if (!path) return;
 
-      const jsonData = await readTextFile(path as string);
       const count: number = await invoke("import_collection", {
         dbName: db,
         collectionName: collection,
-        jsonData,
+        filePath: path as string,
       });
       setStatus(`インポート完了: ${count.toLocaleString()} 件追加`);
     } catch (e) {

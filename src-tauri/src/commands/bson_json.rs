@@ -1,7 +1,5 @@
 use bson::serde_helpers::Utf8LossyDeserialization;
 use bson::{Bson, Document, RawDocumentBuf};
-use futures_util::TryStreamExt;
-use mongodb::Collection;
 use serde_json::Value;
 
 /// 不正なUTF-8バイト列を含むドキュメントでも読み込みを継続できるよう、
@@ -109,25 +107,6 @@ pub fn ext_json_to_doc(value: Value) -> Result<Document, String> {
         Bson::Document(doc) => Ok(doc),
         _ => Err("オブジェクト形式のJSONが必要です".to_string()),
     }
-}
-
-/// コレクション全件をExtended JSON配列として取得する（export/dump用）。
-pub async fn find_all_as_json(col: &Collection<Document>, label: &str) -> Result<Vec<Value>, String> {
-    let raw_col = col.clone_with_type::<RawDocumentBuf>();
-    let mut cursor = raw_col
-        .find(Document::new())
-        .await
-        .map_err(|e| format!("find失敗 ({label}): {e}"))?;
-
-    let mut docs = Vec::new();
-    while let Some(raw_doc) = cursor
-        .try_next()
-        .await
-        .map_err(|e| format!("カーソル読み込み失敗 ({label}): {e}"))?
-    {
-        docs.push(bson_to_ext_json(Bson::Document(raw_doc_to_document(raw_doc)?)));
-    }
-    Ok(docs)
 }
 
 #[cfg(test)]

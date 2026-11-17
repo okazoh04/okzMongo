@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { save, open, confirm } from "@tauri-apps/plugin-dialog";
-import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import DocumentEditor from "./DocumentEditor";
 import DocumentTree from "./tree/DocumentTree";
 import { useI18n } from "../i18n";
@@ -122,17 +121,18 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
   const handleExport = async () => {
     setIoStatus(null);
     try {
-      const json: string = await invoke("export_collection", {
-        connectionId,
-        dbName: db,
-        collectionName: collection,
-      });
       const path = await save({
         defaultPath: `${collection}.json`,
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (path) {
-        await writeTextFile(path, json);
+        // Rust 側がファイルへ直接ストリーム書き出しする（全件を文字列で受け取らない）
+        await invoke("export_collection", {
+          connectionId,
+          dbName: db,
+          collectionName: collection,
+          filePath: path,
+        });
         setIoStatus({ msg: tpl(t.exportSuccess, { path }), ok: true });
       }
     } catch (e) {
@@ -149,12 +149,11 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
         multiple: false,
       });
       if (!path) return;
-      const jsonData = await readTextFile(path as string);
       const count: number = await invoke("import_collection", {
         connectionId,
         dbName: db,
         collectionName: collection,
-        jsonData,
+        filePath: path as string,
       });
       setIoStatus({ msg: tpl(t.importSuccess, { count: count.toLocaleString() }), ok: true });
       load();
