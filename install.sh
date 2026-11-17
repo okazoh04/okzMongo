@@ -16,8 +16,12 @@ fi
 
 # ~/bin へバイナリ配置
 mkdir -p "$BIN_DIR"
-cp "$BINARY" "$BIN_DIR/okzmongo"
-chmod +x "$BIN_DIR/okzmongo"
+# 実行中でも置き換えられるよう、同じフォルダに一時ファイルを書いてから mv で差し替える
+# （実行中のファイルへ直接書くと「テキストファイルがビジー状態です」で失敗するため）
+TMP_BIN=$(mktemp "$BIN_DIR"/.okzmongo.XXXXXX)
+cp "$BINARY" "$TMP_BIN"
+chmod 755 "$TMP_BIN"
+mv -f "$TMP_BIN" "$BIN_DIR"/okzmongo
 echo "==> バイナリを $BIN_DIR/okzmongo に配置しました"
 
 # アイコン配置
