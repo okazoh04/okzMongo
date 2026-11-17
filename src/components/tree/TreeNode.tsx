@@ -134,7 +134,7 @@ export default function TreeNode(props: TreeNodeProps) {
   const applyRaw = (raw: unknown) => {
     const result = coerceType(raw, type);
     if (!result.ok) {
-      setError(result.error);
+      setError(t[result.errorKey]);
       return;
     }
     setError(null);
@@ -144,7 +144,7 @@ export default function TreeNode(props: TreeNodeProps) {
   const applyType = (newType: BsonTypeTag) => {
     const result = convertType(value, newType);
     if (!result.ok) {
-      setError(result.error);
+      setError(t[result.errorKey]);
       return;
     }
     setError(null);
@@ -241,7 +241,7 @@ export default function TreeNode(props: TreeNodeProps) {
             {isContainer ? formatJsonPreview(value) : formatDisplayValue(value)}
           </span>
         )}
-        {error && <span style={{ color: "var(--red)", fontSize: 11 }}>{error}</span>}
+        {error && <span style={{ color: "var(--red)", fontSize: 11, overflowWrap: "anywhere" }}>{error}</span>}
       </div>
       <div>
         <TypeBadge type={type} onChangeType={readOnly ? undefined : applyType} readOnly={readOnly} />

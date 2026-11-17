@@ -22,10 +22,10 @@ interface Props {
 type Tab = "tree" | "json";
 
 // ドキュメントはオブジェクトでなければならない
-function parseDoc(src: string): Record<string, unknown> {
+function parseDoc(src: string, notObjectMsg: string): Record<string, unknown> {
   const v = parseMongoExpr(src);
   if (typeof v !== "object" || v === null || Array.isArray(v)) {
-    throw new Error("ドキュメントは { ... } で書いてください");
+    throw new Error(notObjectMsg);
   }
   return v as Record<string, unknown>;
 }
@@ -55,9 +55,9 @@ export default function DocumentEditor({
     }
     if (next === "tree" && tab === "json") {
       try {
-        setDraftDoc(parseDoc(json));
+        setDraftDoc(parseDoc(json, t.docMustBeObject));
       } catch (e) {
-        setError(`${t.invalidJson}: ${exprErrorMessage(e)}`);
+        setError(`${t.invalidJson}: ${exprErrorMessage(e, t)}`);
         return;
       }
     }
@@ -69,9 +69,9 @@ export default function DocumentEditor({
     let parsed: Record<string, unknown>;
     if (tab === "json") {
       try {
-        parsed = parseDoc(json);
+        parsed = parseDoc(json, t.docMustBeObject);
       } catch (e) {
-        setError(`${t.invalidJson}: ${exprErrorMessage(e)}`);
+        setError(`${t.invalidJson}: ${exprErrorMessage(e, t)}`);
         return;
       }
     } else {

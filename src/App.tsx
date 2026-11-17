@@ -73,7 +73,7 @@ export default function App() {
       setFilterJson(mongoExprToJson(filterInput, "{}"));
       setFilterError(null);
     } catch (e) {
-      setFilterError(`${t.invalidJson}: ${exprErrorMessage(e)}`);
+      setFilterError(`${t.invalidJson}: ${exprErrorMessage(e, t)}`);
     }
   };
 

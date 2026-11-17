@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useI18n } from "../i18n";
+import { useI18n, tpl, type Messages } from "../i18n";
 import DocumentTree from "./tree/DocumentTree";
 import { usePolicy } from "../PolicyProvider";
 import { EnvironmentTier } from "../types";
@@ -57,18 +57,18 @@ interface Parsed {
 }
 
 // 引数文字列を Extended JSON 文字列に変換する。空なら fallback をそのまま返す。
-function argToJson(argStr: string | undefined, fallback: string): string {
+function argToJson(argStr: string | undefined, fallback: string, t: Messages): string {
   try {
     return mongoExprToJson(argStr ?? "", fallback);
   } catch (e) {
-    throw new Error(`式の評価に失敗しました: ${exprErrorMessage(e)}`);
+    throw new Error(tpl(t.exprEvalFailed, { error: exprErrorMessage(e, t) }));
   }
 }
 
-function parseMongosh(input: string): Parsed | string {
+function parseMongosh(input: string, formatHint: string): Parsed | string {
   const s = input.trim().replace(/;?\s*$/, "");
   const m = s.match(/^db\.(\w+)\.(\w+)\(([\s\S]*)\)$/);
-  if (!m) return 'db.コレクション名.メソッド(引数) の形式で入力してください';
+  if (!m) return formatHint;
   return { collection: m[1], method: m[2], args: splitArgs(m[3].trim()) };
 }
 
@@ -78,7 +78,7 @@ type ResultView =
   | { kind: "message"; ok: boolean; text: string };
 
 export default function QueryPad({ connectionId, db, initialQuery, environment }: Props) {
-  const { t, tpl } = useI18n();
+  const { t } = useI18n();
   const { guard } = usePolicy();
   const [query, setQuery] = useState(initialQuery ?? "");
   const [result, setResult] = useState<ResultView | null>(null);
@@ -97,7 +97,7 @@ export default function QueryPad({ connectionId, db, initialQuery, environment }
     const q = query.trim();
     if (!q) return;
 
-    const parsed = parseMongosh(q);
+    const parsed = parseMongosh(q, t.queryFormatHint);
     if (typeof parsed === "string") { setError(parsed); return; }
 
     const { collection: col, method, args } = parsed;
@@ -111,7 +111,7 @@ export default function QueryPad({ connectionId, db, initialQuery, environment }
     try {
       switch (method) {
         case "find": {
-          const filterJson = argToJson(args[0], "{}");
+          const filterJson = argToJson(args[0], "{}", t);
           const skip = targetPage * PAGE_SIZE;
           const [docs, total] = await Promise.all([
             invoke<Record<string, unknown>[]>("find_documents", {
@@ -126,7 +126,7 @@ export default function QueryPad({ connectionId, db, initialQuery, environment }
           break;
         }
         case "findOne": {
-          const filterJson = argToJson(args[0], "{}");
+          const filterJson = argToJson(args[0], "{}", t);
           const docs = await invoke<Record<string, unknown>[]>("find_documents", {
             connectionId, dbName: db, collectionName: col,
             filterJson, skip: 0, limit: 1,
@@ -135,7 +135,7 @@ export default function QueryPad({ connectionId, db, initialQuery, environment }
           break;
         }
         case "aggregate": {
-          const pipelineJson = argToJson(args[0], "[]");
+          const pipelineJson = argToJson(args[0], "[]", t);
           const docs = await invoke<Record<string, unknown>[]>("run_aggregate", {
             connectionId, dbName: db, collectionName: col, pipelineJson,
           });
@@ -144,7 +144,7 @@ export default function QueryPad({ connectionId, db, initialQuery, environment }
         }
         case "countDocuments":
         case "estimatedDocumentCount": {
-          const filterJson = method === "estimatedDocumentCount" ? "{}" : argToJson(args[0], "{}");
+          const filterJson = method === "estimatedDocumentCount" ? "{}" : argToJson(args[0], "{}", t);
           const cnt = await invoke<number>("count_documents", {
             connectionId, dbName: db, collectionName: col, filterJson,
           });
@@ -152,39 +152,39 @@ export default function QueryPad({ connectionId, db, initialQuery, environment }
           break;
         }
         case "insertOne": {
-          const docJson = argToJson(args[0], "{}");
+          const docJson = argToJson(args[0], "{}", t);
           const id = await invoke<string>("insert_document", {
             connectionId, dbName: db, collectionName: col, docJson,
           });
-          setResult({ kind: "message", ok: true, text: `挿入完了: _id = ${id}` });
+          setResult({ kind: "message", ok: true, text: tpl(t.queryInsertDone, { id }) });
           break;
         }
         case "updateOne": {
-          const filterJson = argToJson(args[0], "{}");
-          const updateJson = argToJson(args[1], "{}");
+          const filterJson = argToJson(args[0], "{}", t);
+          const updateJson = argToJson(args[1], "{}", t);
           const cnt = await invoke<number>("update_one_by_filter", {
             connectionId, dbName: db, collectionName: col, filterJson, updateJson,
           });
-          setResult({ kind: "message", ok: true, text: `更新完了: ${cnt} 件変更` });
+          setResult({ kind: "message", ok: true, text: tpl(t.queryUpdateDone, { count: cnt }) });
           break;
         }
         case "deleteOne": {
-          const filterJson = argToJson(args[0], "{}");
+          const filterJson = argToJson(args[0], "{}", t);
           const cnt = await invoke<number>("delete_one_by_filter", {
             connectionId, dbName: db, collectionName: col, filterJson,
           });
-          setResult({ kind: "message", ok: cnt > 0, text: `削除完了: ${cnt} 件削除` });
+          setResult({ kind: "message", ok: cnt > 0, text: tpl(t.queryDeleteDone, { count: cnt }) });
           break;
         }
         default:
-          setError(`"${method}" は未対応です（対応: ${METHODS.slice(0, 7).join(", ")}）`);
+          setError(tpl(t.queryUnsupportedMethod, { method, methods: METHODS.slice(0, 7).join(", ") }));
       }
     } catch (e) {
       setError(tpl(t.queryError, { error: String(e) }));
     } finally {
       setLoading(false);
     }
-  }, [connectionId, db, query, t, tpl, environment, guard]);
+  }, [connectionId, db, query, t, environment, guard]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (assist.onKeyDown(e)) return;

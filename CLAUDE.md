@@ -87,7 +87,7 @@ React UI
 
 **レイアウト**: CSS Flexbox のみ（外部UIライブラリなし）。CSS 変数でテーマ管理（`src/index.css` の `:root`）。
 
-**i18n**: `src/locales/` 配下に `ja.ts`・`en.ts`・`zh-CN.ts`・`zh-TW.ts`・`ko.ts`。`ja.ts` が型の基準（`Messages = typeof ja`）。文字列テンプレートは `tpl(t.someKey, { varName: value })` で `{varName}` を置換。
+**i18n**: `src/locales/` 配下に 18 言語（ja・en・zh-CN・zh-TW・ko・ru・kk・es・pt・fr・de・it・nl・sv・no・ar・th・vi）。`ja.ts` が型の基準（`Messages = typeof ja`）。文字列テンプレートは `tpl(t.someKey, { varName: value })` で `{varName}` を置換。
 
 ### Tauri 権限
 
@@ -113,4 +113,4 @@ React UI
 
 ## i18n の拡張方法
 
-新しい文字列を追加するときは、まず `src/locales/ja.ts` にキーを追加し、他の4言語ファイルにも同一キーを追加する。`Messages = typeof ja` により TypeScript がキーの欠落を検出する。
+新しい文字列を追加するときは、まず `src/locales/ja.ts` にキーを追加し、他の17言語ファイルにも同一キーを追加する。`Messages = typeof ja` により TypeScript がキーの欠落を検出する。

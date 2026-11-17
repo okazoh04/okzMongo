@@ -57,7 +57,12 @@ export function unwrapValue(value: unknown): unknown {
   }
 }
 
-export type CoerceResult = { ok: true; value: unknown } | { ok: false; error: string };
+/** 変換エラーの種類。表示文言は呼び出し側で i18n の辞書から引く */
+export type CoerceErrorKey =
+  | "typeObjectToString" | "typeNotInteger" | "typeInt32Range" | "typeNotNumber"
+  | "typeNotDate" | "typeInvalidObjectId" | "typeUnsupported";
+
+export type CoerceResult = { ok: true; value: unknown } | { ok: false; errorKey: CoerceErrorKey };
 
 /** 型を変更するときの変換。現在値と矛盾して変換できない場合は、新しい型の初期値で置き換える */
 export function convertType(value: unknown, newType: BsonTypeTag): CoerceResult {
@@ -95,23 +100,23 @@ export function coerceType(value: unknown, newType: BsonTypeTag): CoerceResult {
   switch (newType) {
     case "string": {
       if (raw === null || raw === undefined) return { ok: true, value: "" };
-      if (typeof raw === "object") return { ok: false, error: "オブジェクト/配列は文字列に変換できません" };
+      if (typeof raw === "object") return { ok: false, errorKey: "typeObjectToString" };
       return { ok: true, value: String(raw) };
     }
     case "int32": {
       const n = Number(raw);
-      if (!Number.isFinite(n) || !Number.isInteger(n)) return { ok: false, error: "整数に変換できません" };
-      if (n < -2147483648 || n > 2147483647) return { ok: false, error: "Int32の範囲を超えています" };
+      if (!Number.isFinite(n) || !Number.isInteger(n)) return { ok: false, errorKey: "typeNotInteger" };
+      if (n < -2147483648 || n > 2147483647) return { ok: false, errorKey: "typeInt32Range" };
       return { ok: true, value: { $numberInt: String(n) } };
     }
     case "int64": {
       const n = Number(raw);
-      if (!Number.isFinite(n) || !Number.isInteger(n)) return { ok: false, error: "整数に変換できません" };
+      if (!Number.isFinite(n) || !Number.isInteger(n)) return { ok: false, errorKey: "typeNotInteger" };
       return { ok: true, value: { $numberLong: String(n) } };
     }
     case "double": {
       const n = Number(raw);
-      if (!Number.isFinite(n)) return { ok: false, error: "数値に変換できません" };
+      if (!Number.isFinite(n)) return { ok: false, errorKey: "typeNotNumber" };
       return { ok: true, value: n };
     }
     case "bool":
@@ -121,13 +126,13 @@ export function coerceType(value: unknown, newType: BsonTypeTag): CoerceResult {
     case "date": {
       if (raw === null || raw === undefined) return { ok: true, value: { $date: Date.now() } };
       const n = typeof raw === "number" ? raw : Date.parse(String(raw));
-      if (!Number.isFinite(n)) return { ok: false, error: "日付に変換できません" };
+      if (!Number.isFinite(n)) return { ok: false, errorKey: "typeNotDate" };
       return { ok: true, value: { $date: n } };
     }
     case "objectId": {
       if (raw === null || raw === undefined) return { ok: true, value: { $oid: "0".repeat(24) } };
       const s = String(raw);
-      if (!/^[0-9a-fA-F]{24}$/.test(s)) return { ok: false, error: "ObjectIdは24桁の16進数である必要があります" };
+      if (!/^[0-9a-fA-F]{24}$/.test(s)) return { ok: false, errorKey: "typeInvalidObjectId" };
       return { ok: true, value: { $oid: s } };
     }
     case "array":
@@ -135,7 +140,7 @@ export function coerceType(value: unknown, newType: BsonTypeTag): CoerceResult {
     case "object":
       return { ok: true, value: isPlainObject(raw) ? raw : {} };
     default:
-      return { ok: false, error: "未対応の型です" };
+      return { ok: false, errorKey: "typeUnsupported" };
   }
 }
 

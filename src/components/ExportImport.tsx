@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { save, open } from "@tauri-apps/plugin-dialog";
+import { useI18n } from "../i18n";
 
 interface Props {
   db: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function ExportImport({ db, collection }: Props) {
+  const { t, tpl } = useI18n();
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
@@ -29,7 +31,7 @@ export default function ExportImport({ db, collection }: Props) {
           collectionName: collection,
           filePath: path,
         });
-        setStatus(`エクスポート完了: ${path}（${count.toLocaleString()} 件）`);
+        setStatus(tpl(t.transferExportDone, { path, count: count.toLocaleString() }));
       }
     } catch (e) {
       setError(String(e));
@@ -55,7 +57,7 @@ export default function ExportImport({ db, collection }: Props) {
         collectionName: collection,
         filePath: path as string,
       });
-      setStatus(`インポート完了: ${count.toLocaleString()} 件追加`);
+      setStatus(tpl(t.transferImportDone, { count: count.toLocaleString() }));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -69,19 +71,20 @@ export default function ExportImport({ db, collection }: Props) {
       borderTop: "1px solid var(--border)",
       background: "var(--bg2)",
       display: "flex",
+      flexWrap: "wrap",
       alignItems: "center",
       gap: 8,
       flexShrink: 0,
     }}>
-      <span style={{ color: "var(--text-sub)", fontSize: 11 }}>バックアップ / 移行:</span>
-      <button onClick={handleExport} disabled={working} style={{ fontSize: 11 }}>
-        エクスポート
+      <span style={{ color: "var(--text-sub)", fontSize: 11, whiteSpace: "nowrap" }}>{t.transferLabel}</span>
+      <button onClick={handleExport} disabled={working} style={{ fontSize: 11, whiteSpace: "nowrap" }}>
+        {t.transferExport}
       </button>
-      <button onClick={handleImport} disabled={working} style={{ fontSize: 11 }}>
-        インポート
+      <button onClick={handleImport} disabled={working} style={{ fontSize: 11, whiteSpace: "nowrap" }}>
+        {t.transferImport}
       </button>
-      {status && <span style={{ color: "var(--green)", fontSize: 11 }}>{status}</span>}
-      {error && <span style={{ color: "var(--red)", fontSize: 11 }}>{error}</span>}
+      {status && <span style={{ color: "var(--green)", fontSize: 11, minWidth: 0, overflowWrap: "anywhere" }}>{status}</span>}
+      {error && <span style={{ color: "var(--red)", fontSize: 11, minWidth: 0, overflowWrap: "anywhere" }}>{error}</span>}
     </div>
   );
 }

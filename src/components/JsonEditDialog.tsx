@@ -22,7 +22,7 @@ export default function JsonEditDialog({ title, value, onSave, onClose }: Props)
     try {
       parsed = parseMongoExpr(json);
     } catch (e) {
-      setError(`${t.invalidJson}: ${exprErrorMessage(e)}`);
+      setError(`${t.invalidJson}: ${exprErrorMessage(e, t)}`);
       return;
     }
     onSave(parsed);

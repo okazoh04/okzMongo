@@ -1,6 +1,15 @@
 // JSON を書く場所（クエリパッド・フィルタ・ドキュメント編集）で共通に使う、
 // mongosh 風の JavaScript 式の評価と整形。キーの "" を省略でき、ObjectId(...) 等も書ける。
 import { inferType } from "./bsonTypes";
+import type { Messages } from "../i18n";
+
+/** 値が空（undefined など）で JSON にできないときのエラー。表示時に翻訳する */
+export class ExprEmptyError extends Error {
+  constructor() {
+    super("Value is empty");
+    this.name = "ExprEmptyError";
+  }
+}
 
 // mongosh でよく使われるコンストラクタを Extended JSON 形式へ変換するスタブ。
 // バックエンド（bson_json.rs）が対応する $oid/$date/$numberInt/$numberLong のみ実装。
@@ -25,7 +34,7 @@ export function evalMongoExpr(src: string): unknown {
 /** 式を評価し、JSON として表現できる値（undefined・関数などを除去済み）で返す */
 export function parseMongoExpr(src: string): unknown {
   const json = JSON.stringify(evalMongoExpr(src));
-  if (json === undefined) throw new Error("値が空です");
+  if (json === undefined) throw new ExprEmptyError();
   return JSON.parse(json);
 }
 
@@ -36,8 +45,9 @@ export function mongoExprToJson(src: string, fallback: string): string {
   return JSON.stringify(parseMongoExpr(s));
 }
 
-/** 評価エラーを表示用の文字列にする */
-export function exprErrorMessage(e: unknown): string {
+/** 評価エラーを表示用の文字列にする。t を渡すと、既知のエラーを翻訳した文言にする */
+export function exprErrorMessage(e: unknown, t?: Messages): string {
+  if (t && e instanceof ExprEmptyError) return t.exprEmpty;
   return e instanceof Error ? e.message : String(e);
 }
 
