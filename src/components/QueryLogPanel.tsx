@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { EDGE } from "./TitleBar";
 import { useI18n } from "../i18n";
 
 export interface QueryLogEntry {
@@ -57,7 +58,8 @@ export default function QueryLogPanel({ entries, connectionName, onClear, onClos
         <button onClick={onClear} style={{ fontSize: 11, padding: "1px 8px" }}>{t.clear}</button>
         <button onClick={onClose} style={{ fontSize: 11, padding: "1px 8px" }}>✕</button>
       </div>
-      <div ref={listRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", fontSize: 12 }}>
+      {/* 右端は窓の掴みしろ（EDGE px）。スクロールバーをその内側に収めるため、右を空けておく（地色は同じ bg2 なので継ぎ目は見えない） */}
+      <div ref={listRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", fontSize: 12, marginRight: EDGE }}>
         {entries.length === 0 && (
           <div style={{ padding: 12, color: "var(--text-muted)" }}>{t.queryLogEmpty}</div>
         )}

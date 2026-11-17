@@ -184,8 +184,7 @@ export default function App() {
     : null;
 
   return (
-    // 外側の EDGE px は窓の掴みしろ（TitleBar.tsx の ResizeHandles）に使う。スクロールバーをこの内側に収める
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", padding: EDGE, boxSizing: "border-box" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <TitleBar
         onOpenSettings={() => setShowPolicySettings(true)}
         onOpenAbout={() => setShowAbout(true)}
@@ -359,7 +358,8 @@ export default function App() {
                 )}
               </div>
 
-              <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              {/* 右端の EDGE px は窓の掴みしろ（TitleBar.tsx の ResizeHandles）。縦スクロールバーをその内側に収めるため、右を空けておく */}
+              <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", paddingRight: EDGE }}>
                 {/* 開いている全タブを常時マウントし、非表示にするだけにする（読込済みデータや入力内容を保持） */}
                 {openTabs.map(tab => {
                   const key = tabKey(tab);
